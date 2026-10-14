@@ -1,8 +1,11 @@
 <?php
-$envFile = dirname(__DIR__) . '\.env';
+$envFile = (__DIR__) . '\.env';
 $env = [];
 if (file_exists($envFile)) {
   $env = parse_ini_file($envFile);
+  foreach ($env as $key => $value) {
+    putenv($key . '=' . $value);
+  }
 }
 
 $host     = $env['DB_HOST']     ?? '127.0.0.1';
