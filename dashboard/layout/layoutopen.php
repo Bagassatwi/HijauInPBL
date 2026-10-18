@@ -37,5 +37,6 @@ $notifications = getNotifications($userProfiles['id'] ?? '');
 <body class="min-h-screen grid grid-cols-[auto_1fr] grid-rows-[auto_1fr] bg-[#F8FAF8] text-[#1A202C] antialiased">
 
   <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/dashboard/sidebar.php'; ?>
+  <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/dashboard/header.php'; ?>
 
   <main class="lg:p-8 flex-1 w-full p-6 pt-0 overflow-x-hidden">
