@@ -1,5 +1,6 @@
 <?php
-$envFile = (__DIR__) . '\.env';
+$envFile = dirname(__DIR__) . '\.env';
+define("__DIR__", __DIR__ . "\\HijauInPBL");
 $env = [];
 if (file_exists($envFile)) {
   $env = parse_ini_file($envFile);
