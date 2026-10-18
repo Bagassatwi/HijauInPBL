@@ -46,9 +46,11 @@ $tokenStmt->execute([
   'token'   => $hashedToken,
   'user_id' => $user['id']
 ]);
-
+$stmtProfile = $pdo->prepare("select * from public.profiles where id = :id");
+$stmtProfile->execute(["id" => $user['id']]);
+$userProfile = $stmtProfile->fetch(PDO::FETCH_ASSOC);
 session_regenerate_id(true);
-$_SESSION['user']       = $user;
+$_SESSION['user']       = $userProfile;
 $_SESSION['refresh_token'] = $refreshToken;
 setcookie('remember_me', $refreshToken, [
   'expires' => time() + (86400 * 30),
