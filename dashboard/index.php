@@ -21,10 +21,8 @@ $missions = [
 ?>
 
 <div class="flex flex-col gap-6 mx-auto w-full">
-  <!-- Analytics Row 1 -->
   <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
 
-    <!-- Eco Score -->
     <div class="rounded-3xl bg-white p-7 shadow-sm xl:col-span-4">
       <div class="flex h-full">
         <div class="flex flex-1 flex-col justify-between pr-6">
@@ -72,7 +70,6 @@ $missions = [
       </div>
     </div>
 
-    <!-- Aksi Hari Ini -->
     <div class="rounded-3xl bg-white p-6 shadow-sm xl:col-span-2">
       <div class="mb-8 flex items-center gap-3">
         <svg class="h-7 w-7 text-[#11773D]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
@@ -96,7 +93,6 @@ $missions = [
       </div>
     </div>
 
-    <!-- Dampak Hari Ini -->
     <div class="rounded-[24px] bg-white p-8 shadow-sm xl:col-span-4">
       <h3 class="mb-8 flex items-center gap-2 text-[22px] font-semibold text-[#101828]">
         <svg class="w-6 h-6 text-[#11773D]" fill="currentColor" viewBox="0 0 24 24">
@@ -132,7 +128,6 @@ $missions = [
       </div>
     </div>
 
-    <!-- Streak -->
     <div class="flex h-[320px] flex-col justify-between rounded-[24px] border border-[#EAECF0] bg-white p-7 shadow-sm xl:col-span-2">
       <h3 class="flex items-center gap-2 text-[22px] font-semibold text-[#101828]">
         <svg class="w-6 h-6 text-[#FF8A00]" fill="currentColor" viewBox="0 0 24 24">
@@ -152,9 +147,7 @@ $missions = [
     </div>
   </div>
 
-  <!-- Middle Row Layout -->
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
-    <!-- Progress Mingguan (HTML Canvas replacing Recharts) -->
     <div class="h-[470px] rounded-[24px] bg-white p-8 shadow-sm lg:col-span-5">
       <div class="mb-6 flex items-center justify-between">
         <h3 class="text-[22px] font-semibold text-[#101828]">Progress Mingguan</h3>
@@ -179,7 +172,6 @@ $missions = [
       </div>
     </div>
 
-    <!-- Misi Hari Ini -->
     <div class="rounded-[24px] h-[470px] bg-white p-6 shadow-sm lg:col-span-4">
       <div class="mb-5 flex items-center justify-between">
         <h3 class="text-[22px] font-semibold text-[#101828]">Misi Hari Ini</h3>
@@ -214,7 +206,6 @@ $missions = [
       </button>
     </div>
 
-    <!-- AI Green Coach -->
     <div class="flex h-[470px] flex-col rounded-[24px] bg-white p-7 shadow-sm lg:col-span-3">
       <div class="mb-6 flex items-center justify-between">
         <h3 class="text-[22px] font-semibold text-[#101828]">AI Green Coach</h3>
@@ -240,9 +231,7 @@ $missions = [
     </div>
   </div>
 
-  <!-- Bottom Row Layout -->
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-    <!-- Challenge Aktif -->
     <div class="rounded-3xl bg-white p-6 shadow-sm">
       <div class="mb-6 flex items-center justify-between">
         <h3 class="text-[22px] font-semibold text-[#0B0F1F]">Challenge Aktif</h3>
@@ -268,7 +257,6 @@ $missions = [
       </div>
     </div>
 
-    <!-- Achievement Terbaru -->
     <div class="rounded-[24px] bg-white p-7 shadow-sm">
       <div class="mb-6 flex items-center justify-between">
         <h3 class="text-[22px] font-semibold text-[#101828]">Achievement Terbaru</h3>
@@ -299,7 +287,6 @@ $missions = [
       </div>
     </div>
 
-    <!-- Aktivitas Terbaru -->
     <div class="rounded-3xl bg-white p-6 shadow-sm">
       <div class="mb-6 flex items-center justify-between">
         <h3 class="text-[22px] font-bold text-[#0B0F1F]">Aktivitas Terbaru</h3>
