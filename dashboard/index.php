@@ -21,15 +21,17 @@ $missions = [
 ?>
 
 <div class="flex flex-col gap-6 mx-auto w-full">
-  <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[4fr_2fr_4fr_2fr]">
 
-    <div class="rounded-3xl bg-white p-7 shadow-sm xl:col-span-4">
+    <!-- Eco Score -->
+    <div class="rounded-3xl bg-white p-6 shadow-sm">
       <div class="flex h-full">
+        <!-- left -->
         <div class="flex flex-1 flex-col justify-between pr-6">
           <div class="flex items-center gap-2">
             <h3 class="text-[22px] font-semibold text-[#101828]">Eco Score</h3>
             <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF8F0]">
-              <svg class="w-5 h-5 text-[#11773D]" fill="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4.5 h-4.5 text-[#11773D]" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M17 8C8 10 59 16.17 3.82 22 2c0 0 1.34-3.52 2.66-5.83C4.4 12.08 7.37 7.02 12 5c5.33-2.33 10-1 10-1s-1.33 2.33-5 4z" />
               </svg>
             </div>
@@ -44,24 +46,24 @@ $missions = [
             </div>
           </div>
         </div>
-
+        <!-- divider -->
         <div class="mx-2 w-px bg-[#EAECF0]"></div>
-
-        <div class="flex w-[180px] flex-col items-center justify-between pl-6">
+        <!-- right -->
+        <div class="flex w-45 flex-col items-center justify-between pl-6">
           <div class="text-center">
             <p class="text-[18px] font-semibold text-[#667085]">Level</p>
             <p class="mt-1 text-[20px] font-bold text-[#11773D]">Eco Guardian</p>
           </div>
 
           <div class="relative mt-4">
-            <img src="/assets/dashboard/ecoguardian.png" alt="Eco Guardian" class="w-[90px] h-[90px] object-contain" />
+            <img src="/assets/dashboard/ecoguardian.png" alt="Eco Guardian" class="w-22.5 h-30 object-contain" />
             <div class="absolute -bottom-2 left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full bg-[#11773D] text-[12px] font-bold text-white">
               12
             </div>
           </div>
 
           <div class="mt-5 w-full">
-            <div class="h-[10px] overflow-hidden rounded-full bg-[#DCE7DE]">
+            <div class="h-2.5 overflow-hidden rounded-full bg-[#DCE7DE]">
               <div class="h-full rounded-full bg-[#11773D]" style="width: 76%;"></div>
             </div>
             <p class="mt-3 text-center text-[18px] font-semibold text-[#475467]">760 / 1000 XP</p>
@@ -70,7 +72,8 @@ $missions = [
       </div>
     </div>
 
-    <div class="rounded-3xl bg-white p-6 shadow-sm xl:col-span-2">
+    <!-- Aksi Hari Ini -->
+    <div class="rounded-3xl bg-white p-6 shadow-sm">
       <div class="mb-8 flex items-center gap-3">
         <svg class="h-7 w-7 text-[#11773D]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -85,7 +88,7 @@ $missions = [
         </div>
         <p class="mt-3 text-[20px] font-semibold text-[#475467]">Selesai</p>
 
-        <div class="mt-8 h-[10px] w-full overflow-hidden rounded-full bg-[#DFE7E2]">
+        <div class="mt-8 h-2.5 w-full overflow-hidden rounded-full bg-[#DFE7E2]">
           <div class="h-full rounded-full bg-[#11773D]" style="width: 60%;"></div>
         </div>
 
@@ -93,7 +96,8 @@ $missions = [
       </div>
     </div>
 
-    <div class="rounded-[24px] bg-white p-8 shadow-sm xl:col-span-4">
+    <!-- Dampak Hari Ini -->
+    <div class="rounded-3xl bg-white p-6 shadow-sm">
       <h3 class="mb-8 flex items-center gap-2 text-[22px] font-semibold text-[#101828]">
         <svg class="w-6 h-6 text-[#11773D]" fill="currentColor" viewBox="0 0 24 24">
           <path d="M17 8C8 10 59 16.17 3.82 22 2c0 0 1.34-3.52 2.66-5.83C4.4 12.08 7.37 7.02 12 5c5.33-2.33 10-1 10-1s-1.33 2.33-5 4z" />
@@ -101,54 +105,56 @@ $missions = [
         Dampak Hari Ini
       </h3>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div class="flex flex-col items-center text-center">
-          <img src="/assets/co2.png" alt="CO2" class="mb-4 h-[60px] w-[60px] object-contain" />
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 *:grid *:grid-rows-[1fr_1fr_auto] *:*:m-auto text-center">
+        <div class="">
+          <img src="/assets/co2.png" alt="CO2" class="mb-4 h-15 w-15 object-contain " />
           <p class="text-[14px] font-medium text-[#667085]">CO₂ Dihindari</p>
           <p class="mt-3 text-[20px] font-bold text-[#11773D]">1,2 kg</p>
         </div>
 
-        <div class="flex flex-col items-center text-center">
-          <img src="/assets/air.png" alt="Air" class="mb-5 h-[38px] w-[38px] object-contain" />
+        <div class="">
+          <img src="/assets/air.png" alt="Air" class="h-9.5 w-9.5 object-contain text-center" />
           <p class="text-[14px] font-medium text-[#667085]">Air Dihemat</p>
           <p class="mt-3 text-[20px] font-bold text-[#11773D]">45 L</p>
         </div>
 
-        <div class="flex flex-col items-center text-center">
-          <img src="/assets/dashboard/petir.png" alt="Energi" class="mb-4 h-[38px] w-[38px] object-contain" />
+        <div class="">
+          <img src="/assets/dashboard/petir.png" alt="Energi" class="mb-4 h-9.5 w-9.5 object-contain" />
           <p class="text-[14px] font-medium text-[#667085]">Energi Dihemat</p>
           <p class="mt-3 text-[20px] font-bold text-[#11773D]">2 kWh</p>
         </div>
 
-        <div class="flex flex-col items-center text-center">
-          <img src="/assets/pohon.png" alt="Pohon" class="mb-4 h-[60px] w-[60px] object-contain" />
+        <div class="">
+          <img src="/assets/pohon.png" alt="Pohon" class="mb-4 h-15 w-15 object-contain" />
           <p class="text-[14px] font-medium text-[#667085]">Pohon Ditanam</p>
           <p class="mt-3 text-[20px] font-bold text-[#11773D]">1 Pohon</p>
         </div>
       </div>
     </div>
 
-    <div class="flex h-[320px] flex-col justify-between rounded-[24px] border border-[#EAECF0] bg-white p-7 shadow-sm xl:col-span-2">
-      <h3 class="flex items-center gap-2 text-[22px] font-semibold text-[#101828]">
-        <svg class="w-6 h-6 text-[#FF8A00]" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 23c6.075 0 11-4.925 11-11 0-4.12-2.264-7.71-5.618-9.61-.417-.237-.946.035-.97.513-.15 2.94-1.895 5.485-4.412 6.643C10.66 4.975 8.12 2.37 8.082 2.33c-.34-.352-.924-.23-1.106.233C5.698 5.764 5 8.783 5 12c0 6.075 4.925 11 11 11z" />
-        </svg>
-        Streak
-      </h3>
-
-      <div class="flex items-end justify-between">
-        <div>
-          <h2 class="text-[32px] font-semibold leading-none text-[#11773D]">12</h2>
-          <p class="mt-2 text-[15px] font-semibold text-[#475467]">Hari</p>
-          <p class="mt-8 text-[15px] font-medium leading-relaxed text-[#667085]">Pertahankan<br />streak-mu!</p>
-        </div>
-        <img src="/assets/dashboard/streak.png" alt="Streak" class="w-[100px] h-[100px] object-contain ml-3" />
+    <!-- Streak -->
+    <div class="grid grid-cols-2 rounded-3xl border border-[#EAECF0] bg-white p-6 shadow-sm">
+      <div class="flex flex-col justify-between">
+        <h3 class="flex items-center gap-2 text-[22px] font-semibold text-[#101828]">
+          <svg class="w-6 h-6 text-[#FF8A00]" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 23c6.075 0 11-4.925 11-11 0-4.12-2.264-7.71-5.618-9.61-.417-.237-.946.035-.97.513-.15 2.94-1.895 5.485-4.412 6.643C10.66 4.975 8.12 2.37 8.082 2.33c-.34-.352-.924-.23-1.106.233C5.698 5.764 5 8.783 5 12c0 6.075 4.925 11 11 11z" />
+          </svg>
+          Streak
+        </h3>
+        <span>
+          <h2 class="text-5xl font-semibold leading-none text-[#11773D]">12</h2>
+          <p class="mt-2 text-2xl font-semibold text-[#475467]">Hari</p>
+        </span>
+        <p class="font-medium leading-relaxed text-[#667085]">Pertahankan streak-mu!</p>
+      </div>
+      <div class="flex items-end">
+        <img src="/assets/dashboard/streak.png" alt="Streak" class="w-25 h-50 object-contain" />
       </div>
     </div>
   </div>
 
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
-    <div class="h-[470px] rounded-[24px] bg-white p-8 shadow-sm lg:col-span-5">
+    <div class="h-117.5 rounded-3xl bg-white p-8 shadow-sm lg:col-span-5">
       <div class="mb-6 flex items-center justify-between">
         <h3 class="text-[22px] font-semibold text-[#101828]">Progress Mingguan</h3>
         <select class="rounded-xl border border-[#EAECF0] px-4 py-2 text-[16px] font-semibold text-[#344054] outline-none">
@@ -167,12 +173,12 @@ $missions = [
         </div>
       </div>
 
-      <div class="h-[280px] w-full relative">
+      <div class="h-70 w-full relative">
         <canvas id="weeklyCanvas" class="w-full h-full"></canvas>
       </div>
     </div>
 
-    <div class="rounded-[24px] h-[470px] bg-white p-6 shadow-sm lg:col-span-4">
+    <div class="rounded-3xl h-117.5 bg-white p-6 shadow-sm lg:col-span-4">
       <div class="mb-5 flex items-center justify-between">
         <h3 class="text-[22px] font-semibold text-[#101828]">Misi Hari Ini</h3>
         <button class="text-[16px] font-semibold text-[#11773D]">Lihat Semua</button>
@@ -206,7 +212,7 @@ $missions = [
       </button>
     </div>
 
-    <div class="flex h-[470px] flex-col rounded-[24px] bg-white p-7 shadow-sm lg:col-span-3">
+    <div class="flex h-117.5 flex-col rounded-3xl bg-white p-7 shadow-sm lg:col-span-3">
       <div class="mb-6 flex items-center justify-between">
         <h3 class="text-[22px] font-semibold text-[#101828]">AI Green Coach</h3>
         <span class="rounded-full bg-[#EEF8F0] px-3 py-1 text-[14px] font-semibold text-[#11773D]">Baru</span>
@@ -221,7 +227,7 @@ $missions = [
           </div>
         </div>
 
-        <button class="mt-4 flex h-[50px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#11773D] text-[18px] font-semibold text-white hover:bg-[#0D6433]">
+        <button class="mt-4 flex h-12.5 w-full items-center justify-center gap-2 rounded-[14px] bg-[#11773D] text-[18px] font-semibold text-white hover:bg-[#0D6433]">
           Tanya Sekarang
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -257,7 +263,7 @@ $missions = [
       </div>
     </div>
 
-    <div class="rounded-[24px] bg-white p-7 shadow-sm">
+    <div class="rounded-3xl bg-white p-7 shadow-sm">
       <div class="mb-6 flex items-center justify-between">
         <h3 class="text-[22px] font-semibold text-[#101828]">Achievement Terbaru</h3>
         <button class="text-[16px] font-semibold text-[#11773D]">Lihat Semua →</button>
@@ -424,5 +430,6 @@ $missions = [
     window.addEventListener('resize', renderChart);
   });
 </script>
+
 <?php
 include "/layout/layoutclose.php";
