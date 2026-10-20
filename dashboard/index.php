@@ -432,4 +432,4 @@ $missions = [
 </script>
 
 <?php
-include "/layout/layoutclose.php";
+include "./layout/layoutclose.php";
