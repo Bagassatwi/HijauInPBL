@@ -83,10 +83,11 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
         <div class="lg:flex-row lg:items-center flex flex-col items-start justify-between gap-4 mb-6">
           <h3 class="text-xl font-bold text-[#0B0F1F]">Riwayat Aktivitas</h3>
           <div class="lg:w-auto flex items-center w-full gap-3">
-            <button type="button" onclick="showComingSoon()" class="lg:flex-none rounded-xl flex items-center justify-between flex-1 gap-2 px-4 py-2 text-base font-semibold text-gray-700 bg-white border border-gray-200">
+            <p class="text-red-500 text-sm font-semibold mb-2">Fitur filter kategori dan tanggal sedang dalam tahap pengembangan (Coming Soon)</p>
+            <button type="button" class="cursor-not-allowed lg:flex-none rounded-xl flex items-center justify-between flex-1 gap-2 px-4 py-2 text-base font-semibold text-gray-700 bg-white border border-gray-200">
               🔍 Semua Kategori ▼
             </button>
-            <button type="button" onclick="showComingSoon()" class="lg:flex-none rounded-xl flex items-center justify-between flex-1 gap-2 px-4 py-2 text-base font-semibold text-gray-700 bg-white border border-gray-200">
+            <button type="button" class="cursor-not-allowed lg:flex-none rounded-xl flex items-center justify-between flex-1 gap-2 px-4 py-2 text-base font-semibold text-gray-700 bg-white border border-gray-200">
               📅 Pilih Tanggal ▼
             </button>
           </div>
@@ -260,7 +261,8 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
       <div class="rounded-[24px] bg-white p-7 shadow-sm">
         <div class="mb-8 flex items-center justify-between">
           <h3 class="text-[22px] font-semibold text-[#101828]">Kategori Aktivitas</h3>
-          <button type="button" onclick="showComingSoon()" class="text-[17px] font-semibold text-[#11773D]">Lihat Semua</button>
+          <p class="text-red-500 text-sm font-semibold mb-2">Fitur filter kategori dan tanggal sedang dalam tahap pengembangan (Coming Soon)</p>
+          <button type="button" class="text-[17px] cursor-not-allowed font-semibold text-[#11773D]">Lihat Semua</button>
         </div>
 
         <div class="space-y-7">
@@ -388,18 +390,7 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-  function showComingSoon() {
-    Swal.fire({
-      icon: 'info',
-      title: 'Segera Hadir 🚀',
-      text: 'Fitur filter kategori dan tanggal sedang dalam pengembangan.',
-      confirmButtonColor: '#11773D',
-      confirmButtonText: 'Mengerti'
-    });
-  }
-
   document.addEventListener("DOMContentLoaded", function() {
     const modal = document.getElementById("createModal");
     const openBtn = document.getElementById("openModalBtn");
