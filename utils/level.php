@@ -1,6 +1,9 @@
 <?php
 require_once($_SERVER['DOCUMENT_ROOT'] . "/utils/connection.php");
 
+function calculateLevel(int $xp): int {
+  return (int) floor($xp / 100) + 1;
+}
 function getCurrentLevel(int $xp, array $levels): array {
   $level = (int) floor($xp / 100) + 1;
   $title = array_find(array_reverse($levels), fn($val) => (int) $xp >= $val['minXp']);
