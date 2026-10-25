@@ -39,12 +39,7 @@ $actStmt->execute([':user_id' => $userId]);
 $recentActivities = $actStmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (empty($recentActivities)) {
-  $recentActivities = [
-    ['title' => 'Membawa Tumbler', 'action' => 'Mencatat aktivitas', 'time' => '2 jam yang lalu', 'point' => 20, 'image' => '/assets/tumbler.png'],
-    ['title' => 'Hemat Air', 'action' => 'Mencatat aktivitas', 'time' => '5 jam yang lalu', 'point' => 15, 'image' => '/assets/air.png'],
-    ['title' => 'Hemat Energi', 'action' => 'Mencatat aktivitas', 'time' => '1 hari yang lalu', 'point' => 15, 'image' => '/assets/petir.png'],
-    ['title' => 'Hijau Bersama', 'action' => 'Mengikuti komunitas', 'time' => '2 hari yang lalu', 'point' => 0, 'image' => '/assets/dashboard-komunitas/green.png'],
-  ];
+  $recentActivities = [];
 }
 ?>
 
@@ -281,6 +276,14 @@ if (empty($recentActivities)) {
         </div>
 
         <div class="flex flex-col gap-6">
+          <?php if (count($recentActivities) == 0) {
+          ?>
+            <div class="flex items-center justify-between">
+              None
+            </div>
+          <?php
+          }
+          ?>
           <?php foreach ($recentActivities as $act): ?>
             <?php
             $title = $act['title'] ?? 'Aktivitas';
