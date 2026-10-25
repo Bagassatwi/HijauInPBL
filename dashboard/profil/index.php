@@ -292,18 +292,16 @@ if (empty($recentActivities)) {
             $pt = isset($act['point']) ? (int)$act['point'] : 0;
             $image = $act['image'] ?? '/assets/tumbler.png';
             ?>
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-4">
-                <div class="flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF4EC]">
-                  <img src="<?= htmlspecialchars($image) ?>" alt="" class="w-7 h-7 object-contain" />
-                </div>
-                <div>
-                  <p class="text-[13px] font-medium text-[#667085]"><?= htmlspecialchars($action) ?></p>
-                  <h4 class="mt-0.5 text-[18px] font-semibold text-[#344054]"><?= htmlspecialchars($title) ?></h4>
-                  <p class="mt-0.5 text-[13px] font-medium text-[#667085]"><?= htmlspecialchars($time) ?></p>
-                </div>
+            <div class="grid grid-cols-[auto_1fr_auto] gap-4 items-center">
+              <div class="flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF4EC] p-2">
+                <img src="<?= htmlspecialchars($image) ?>" alt="" class="size-full object-contain" />
               </div>
-              <p class="text-[20px] font-semibold <?= $pt > 0 ? 'text-[#11773D]' : 'text-[#98A2B3]' ?>">
+              <div>
+                <p class="text-[13px] font-medium text-[#667085]"><?= htmlspecialchars($action) ?></p>
+                <h4 class="mt-0.5 text-[18px] font-semibold text-[#344054]"><?= htmlspecialchars($title) ?></h4>
+                <p class="mt-0.5 text-[13px] font-medium text-[#667085]"><?= htmlspecialchars($time) ?></p>
+              </div>
+              <p class="text-2xl font-semibold items-center <?= $pt > 0 ? 'text-[#11773D]' : 'text-[#98A2B3]' ?>">
                 <?= $pt > 0 ? '+' . $pt . ' Poin' : '-' ?>
               </p>
             </div>
