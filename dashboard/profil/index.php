@@ -1,6 +1,5 @@
 <?php
 session_start();
-require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
 
 $userId = $_SESSION['user']['id'] ?? null;
@@ -9,38 +8,115 @@ if (!$userId) {
   exit;
 }
 
-// Fetch user profile from database
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_profile') {
+  $fullName = trim($_POST['full_name'] ?? '');
+  $city = trim($_POST['city'] ?? '');
+  $bio = trim($_POST['bio'] ?? '');
+  $avatarUrl = trim($_POST['avatar_url'] ?? '');
+
+  if ($fullName === '') {
+    $_SESSION['error'] = 'Nama lengkap harus diisi.';
+    header('Location: /dashboard/profil/index.php');
+    exit;
+  }
+
+  try {
+    $defaultAvatar = 'https://bzmrlrsyezgogcjhcytz.supabase.co/storage/v1/object/public/image/ava1.png';
+    $upsertStmt = $pdo->prepare("
+      INSERT INTO public.profiles (id, full_name, city, bio, avatar_url)
+      VALUES (:id, :full_name, :city, :bio, :avatar_url)
+      ON CONFLICT (id)
+      DO UPDATE SET
+        full_name = EXCLUDED.full_name,
+        city = EXCLUDED.city,
+        bio = EXCLUDED.bio,
+        avatar_url = EXCLUDED.avatar_url
+    ");
+
+    $upsertStmt->execute([
+      ':id' => $userId,
+      ':full_name' => $fullName,
+      ':city' => $city !== '' ? $city : null,
+      ':bio' => $bio !== '' ? $bio : null,
+      ':avatar_url' => $avatarUrl !== '' ? $avatarUrl : $defaultAvatar,
+    ]);
+
+    $profileStmt = $pdo->prepare("SELECT * FROM public.profiles WHERE id = :id LIMIT 1");
+    $profileStmt->execute([':id' => $userId]);
+    $updatedProfile = $profileStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    if (!empty($updatedProfile)) {
+      $_SESSION['user'] = array_merge($_SESSION['user'] ?? [], $updatedProfile);
+    }
+
+    $_SESSION['success'] = 'Profil berhasil diperbarui.';
+    header('Location: /dashboard/profil/index.php');
+    exit;
+  } catch (Throwable $e) {
+    error_log('Update profile error: ' . $e->getMessage());
+    $_SESSION['error'] = 'Gagal memperbarui profil. Silakan coba lagi.';
+    header('Location: /dashboard/profil/index.php');
+    exit;
+  }
+}
+
+require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
+
 $stmt = $pdo->prepare("SELECT * FROM public.profiles WHERE id = :id LIMIT 1");
 $stmt->execute([':id' => $userId]);
 $userProfile = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
-// User details
-$fullName   = $userProfile['full_name'] ?? $_SESSION['user']['full_name'] ?? $_SESSION['user']['name'] ?? 'User';
-$avatarUrl  = !empty($userProfile['avatar_url']) ? $userProfile['avatar_url'] : '/assets/avatar.png';
-$email      = $_SESSION['user']['email'] ?? $userProfile['email'] ?? '-';
-$phone      = $_SESSION['user']['phone'] ?? $userProfile['phone'] ?? '-';
-$city       = !empty($userProfile['city']) ? $userProfile['city'] : 'Indonesia';
-$bio        = !empty($userProfile['bio']) ? $userProfile['bio'] : 'Berusaha menjadi versi terbaik untuk bumi dengan langkah kecil setiap hari.';
+$emailStmt = $pdo->prepare("SELECT email FROM auth.users WHERE id = :id LIMIT 1");
+$emailStmt->execute([':id' => $userId]);
+$emailRow = $emailStmt->fetch(PDO::FETCH_ASSOC);
 
-$createdAt  = $_SESSION['user']['created_at'] ?? $userProfile['created_at'] ?? date('Y-m-d');
+$fullName = $userProfile['full_name'] ?? $_SESSION['user']['full_name'] ?? $_SESSION['user']['name'] ?? 'User';
+$avatarUrl = !empty($userProfile['avatar_url']) ? $userProfile['avatar_url'] : '/assets/avatar.png';
+$email = $emailRow['email'] ?? ($_SESSION['user']['email'] ?? '-');
+$phone = $_SESSION['user']['phone'] ?? '-';
+$city = !empty($userProfile['city']) ? $userProfile['city'] : 'Indonesia';
+$bio = !empty($userProfile['bio']) ? $userProfile['bio'] : 'Berusaha menjadi versi terbaik untuk bumi dengan langkah kecil setiap hari.';
+
+$createdAt = $_SESSION['user']['created_at'] ?? $userProfile['created_at'] ?? date('Y-m-d');
 $joinedDate = date('d M Y', strtotime($createdAt));
 
-$xp     = (int)($userProfile['xp'] ?? $_SESSION['user']['xp'] ?? 760);
-$level  = (int)($userProfile['level'] ?? 12);
-$streak = (int)($userProfile['streak'] ?? 0);
+$xp = (int)($userProfile['xp'] ?? $_SESSION['user']['xp'] ?? 0);
+$level = (int)($userProfile['level'] ?? $_SESSION['user']['level'] ?? 1);
+$streak = (int)($userProfile['streak'] ?? $_SESSION['user']['streak'] ?? 0);
 
-$nextLevelXp = 1000;
+$totalPointsStmt = $pdo->prepare("SELECT COALESCE(SUM(point), 0) FROM public.eco_actions WHERE user_id = :user_id");
+$totalPointsStmt->execute([':user_id' => $userId]);
+$pointsTotal = (int)$totalPointsStmt->fetchColumn();
+$xp = max($xp, $pointsTotal);
+
+$nextLevelXp = max(1000, 1000 + (($level - 1) * 250));
 $xpProgressPercentage = min(100, round(($xp / $nextLevelXp) * 100));
 $xpNeeded = max(0, $nextLevelXp - $xp);
 
-// Recent activities fetch
-$actStmt = $pdo->prepare("SELECT * FROM public.eco_actions WHERE user_id = :user_id ORDER BY activity_date DESC LIMIT 4");
-$actStmt->execute([':user_id' => $userId]);
-$recentActivities = $actStmt->fetchAll(PDO::FETCH_ASSOC);
+$challengeStmt = $pdo->prepare("SELECT COUNT(*) FROM public.user_challenges WHERE user_id = :user_id AND status IN ('completed', 'complete', 'finished')");
+$challengeStmt->execute([':user_id' => $userId]);
+$challengeCount = (int)$challengeStmt->fetchColumn();
 
-if (empty($recentActivities)) {
-  $recentActivities = [];
-}
+$badgeStmt = $pdo->prepare("
+  SELECT b.name, b.image, b.description
+  FROM public.user_badges ub
+  JOIN public.badges b ON b.id = ub.badge_id
+  WHERE ub.user_id = :user_id
+  ORDER BY ub.earned_at DESC
+  LIMIT 4
+");
+$badgeStmt->execute([':user_id' => $userId]);
+$badges = $badgeStmt->fetchAll(PDO::FETCH_ASSOC);
+$badgeCount = count($badges);
+
+$recentActivitiesStmt = $pdo->prepare("
+  SELECT title, description, point, image_url, activity_date, created_at
+  FROM public.eco_actions
+  WHERE user_id = :user_id
+  ORDER BY COALESCE(activity_date, created_at) DESC
+  LIMIT 4
+");
+$recentActivitiesStmt->execute([':user_id' => $userId]);
+$recentActivities = $recentActivitiesStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="w-full flex flex-col gap-6 mt-4">
@@ -58,7 +134,7 @@ if (empty($recentActivities)) {
             <div class="relative h-37.5 w-37.5 overflow-hidden rounded-full border-4 border-white bg-white">
               <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="<?= htmlspecialchars($fullName) ?>" class="w-full h-full object-cover" />
             </div>
-            <button type="button" class="absolute bottom-2 -right-2 flex h-13 w-13 items-center justify-center rounded-full bg-white shadow-md transition hover:bg-gray-50">
+            <button type="button" data-open-profile-modal class="absolute bottom-2 -right-2 flex h-13 w-13 items-center justify-center rounded-full bg-white shadow-md transition hover:bg-gray-50">
               ✏️
             </button>
           </div>
@@ -87,7 +163,7 @@ if (empty($recentActivities)) {
               <?= nl2br(htmlspecialchars($bio)) ?>
             </p>
 
-            <button type="button" class="flex h-15 w-fit mx-auto md:mx-0 items-center gap-3 rounded-2xl border-2 border-[#11773D] px-8 text-[18px] font-semibold text-[#11773D] transition hover:bg-[#F4FBF5]">
+            <button type="button" data-open-profile-modal class="flex h-15 w-fit mx-auto md:mx-0 items-center gap-3 rounded-2xl border-2 border-[#11773D] px-8 text-[18px] font-semibold text-[#11773D] transition hover:bg-[#F4FBF5]">
               ✏️ Edit Profil
             </button>
           </div>
@@ -115,7 +191,7 @@ if (empty($recentActivities)) {
               <div class="rounded-[22px] border border-[#EAECF0] bg-white px-5 py-6 text-center">
                 <div class="mb-4 flex items-center justify-center gap-2">
                   <img src="/assets/challange/point.png" alt="" class="w-8 h-8 object-contain" />
-                  <h4 class="text-[28px] font-semibold text-[#101828]">1.250</h4>
+                  <h4 class="text-[28px] font-semibold text-[#101828]"><?= number_format($xp) ?></h4>
                 </div>
                 <p class="text-[15px] font-medium text-[#475467]">Total Poin</p>
               </div>
@@ -123,7 +199,7 @@ if (empty($recentActivities)) {
               <div class="rounded-[22px] border border-[#EAECF0] bg-white px-5 py-6 text-center">
                 <div class="mb-4 flex items-center justify-center gap-2">
                   <img src="/assets/challange/t.png" alt="" class="w-8 h-8 object-contain" />
-                  <h4 class="text-[28px] font-semibold text-[#101828]">8</h4>
+                  <h4 class="text-[28px] font-semibold text-[#101828]"><?= $challengeCount ?></h4>
                 </div>
                 <p class="text-[15px] font-medium text-[#475467]">Challenge Selesai</p>
               </div>
@@ -131,7 +207,7 @@ if (empty($recentActivities)) {
               <div class="rounded-[22px] border border-[#EAECF0] bg-white px-5 py-6 text-center">
                 <div class="mb-4 flex items-center justify-center gap-2">
                   <img src="/assets/challange/eco.png" alt="" class="w-8 h-8 object-contain" />
-                  <h4 class="text-[28px] font-semibold text-[#101828]">8</h4>
+                  <h4 class="text-[28px] font-semibold text-[#101828]"><?= $badgeCount ?></h4>
                 </div>
                 <p class="text-[15px] font-medium text-[#475467]">Badge Dimiliki</p>
               </div>
@@ -237,35 +313,22 @@ if (empty($recentActivities)) {
           <button type="button" class="text-[18px] font-semibold text-[#11773D] hover:underline">Lihat Semua</button>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="flex flex-col items-center text-center">
-            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-[#F6FAF5]">
-              <img src="/assets/profil/eco-warrior.png" alt="Eco Warrior" class="w-16 h-16 object-contain" />
-            </div>
-            <p class="mt-3 text-[15px] font-medium text-[#475467]">Eco Warrior</p>
+        <?php if (empty($badges)): ?>
+          <div class="rounded-2xl border border-dashed border-[#D0D5DD] bg-[#F9FAFB] px-4 py-6 text-center text-[15px] font-medium text-[#667085]">
+            Belum ada badge yang diraih.
           </div>
-
-          <div class="flex flex-col items-center text-center">
-            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-[#F6FAF5]">
-              <img src="/assets/profil/water.png" alt="Water Saver" class="w-16 h-16 object-contain" />
-            </div>
-            <p class="mt-3 text-[15px] font-medium text-[#475467]">Water Saver</p>
+        <?php else: ?>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <?php foreach ($badges as $badge): ?>
+              <div class="flex flex-col items-center text-center">
+                <div class="flex h-20 w-20 items-center justify-center rounded-full bg-[#F6FAF5]">
+                  <img src="<?= htmlspecialchars($badge['image'] ?: '/assets/profil/eco-warrior.png') ?>" alt="<?= htmlspecialchars($badge['name'] ?? 'Badge') ?>" class="w-16 h-16 object-contain" />
+                </div>
+                <p class="mt-3 text-[15px] font-medium text-[#475467]"><?= htmlspecialchars($badge['name'] ?? 'Badge') ?></p>
+              </div>
+            <?php endforeach; ?>
           </div>
-
-          <div class="flex flex-col items-center text-center">
-            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-[#F6FAF5]">
-              <img src="/assets/profil/green-starter.png" alt="Green Starter" class="w-16 h-16 object-contain" />
-            </div>
-            <p class="mt-3 text-[15px] font-medium text-[#475467]">Green Starter</p>
-          </div>
-
-          <div class="flex flex-col items-center text-center">
-            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-[#F6FAF5]">
-              <img src="/assets/profil/energi.png" alt="Energy Saver" class="w-16 h-16 object-contain" />
-            </div>
-            <p class="mt-3 text-[15px] font-medium text-[#475467]">Energy Saver</p>
-          </div>
-        </div>
+        <?php endif; ?>
       </div>
 
       <!-- Aktivitas Terakhir -->
@@ -276,36 +339,34 @@ if (empty($recentActivities)) {
         </div>
 
         <div class="flex flex-col gap-6">
-          <?php if (count($recentActivities) == 0) {
-          ?>
-            <div class="flex items-center justify-between">
-              None
+          <?php if (empty($recentActivities)): ?>
+            <div class="rounded-2xl border border-dashed border-[#D0D5DD] bg-[#F9FAFB] px-4 py-6 text-center text-[15px] font-medium text-[#667085]">
+              Belum ada aktivitas terbaru.
             </div>
-          <?php
-          }
-          ?>
-          <?php foreach ($recentActivities as $act): ?>
-            <?php
-            $title = $act['title'] ?? 'Aktivitas';
-            $action = $act['action'] ?? 'Mencatat aktivitas';
-            $time = !empty($act['activity_date']) ? date('H:i, d M', strtotime($act['activity_date'])) : ($act['time'] ?? 'Baru saja');
-            $pt = isset($act['point']) ? (int)$act['point'] : 0;
-            $image = $act['image'] ?? '/assets/tumbler.png';
-            ?>
-            <div class="grid grid-cols-[auto_1fr_auto] gap-4 items-center">
-              <div class="flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF4EC] p-2">
-                <img src="<?= htmlspecialchars($image) ?>" alt="" class="size-full object-contain" />
+          <?php else: ?>
+            <?php foreach ($recentActivities as $act): ?>
+              <?php
+              $title = $act['title'] ?? 'Aktivitas';
+              $action = $act['description'] ?? 'Mencatat aktivitas';
+              $time = !empty($act['activity_date']) ? date('H:i, d M', strtotime($act['activity_date'])) : (!empty($act['created_at']) ? date('H:i, d M', strtotime($act['created_at'])) : 'Baru saja');
+              $pt = isset($act['point']) ? (int)$act['point'] : 0;
+              $image = $act['image_url'] ?? '/assets/tumbler.png';
+              ?>
+              <div class="grid grid-cols-[auto_1fr_auto] gap-4 items-center">
+                <div class="flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF4EC] p-2">
+                  <img src="<?= htmlspecialchars($image) ?>" alt="" class="size-full object-contain" />
+                </div>
+                <div>
+                  <h4 class="mt-0.5 text-[18px] font-semibold text-[#344054]"><?= htmlspecialchars($title) ?></h4>
+                  <p class="text-[13px] font-medium text-[#667085]"><?= htmlspecialchars($action) ?></p>
+                  <p class="mt-0.5 text-[13px] font-medium text-[#667085]"><?= htmlspecialchars($time) ?></p>
+                </div>
+                <p class="text-2xl font-semibold items-center <?= $pt > 0 ? 'text-[#11773D]' : 'text-[#98A2B3]' ?>">
+                  <?= $pt > 0 ? '+' . $pt . ' Poin' : '-' ?>
+                </p>
               </div>
-              <div>
-                <p class="text-[13px] font-medium text-[#667085]"><?= htmlspecialchars($action) ?></p>
-                <h4 class="mt-0.5 text-[18px] font-semibold text-[#344054]"><?= htmlspecialchars($title) ?></h4>
-                <p class="mt-0.5 text-[13px] font-medium text-[#667085]"><?= htmlspecialchars($time) ?></p>
-              </div>
-              <p class="text-2xl font-semibold items-center <?= $pt > 0 ? 'text-[#11773D]' : 'text-[#98A2B3]' ?>">
-                <?= $pt > 0 ? '+' . $pt . ' Poin' : '-' ?>
-              </p>
-            </div>
-          <?php endforeach; ?>
+            <?php endforeach; ?>
+          <?php endif; ?>
         </div>
 
         <button type="button" class="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#EAECF0] py-4 text-[18px] font-semibold text-[#11773D] transition hover:bg-[#F8FAF8]">
@@ -344,7 +405,73 @@ if (empty($recentActivities)) {
         });
       });
     });
+
+    const profileModal = document.getElementById('profile-modal');
+    const openButtons = document.querySelectorAll('[data-open-profile-modal]');
+    const closeButtons = document.querySelectorAll('[data-close-profile-modal]');
+
+    openButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        profileModal.classList.remove('hidden');
+        profileModal.classList.add('flex');
+      });
+    });
+
+    closeButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        profileModal.classList.add('hidden');
+        profileModal.classList.remove('flex');
+      });
+    });
+
+    profileModal.addEventListener('click', function(event) {
+      if (event.target === profileModal) {
+        profileModal.classList.add('hidden');
+        profileModal.classList.remove('flex');
+      }
+    });
   });
 </script>
+
+<div id="profile-modal" class="fixed inset-0 z-999 hidden items-center justify-center bg-black/40 px-4">
+  <div class="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl">
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#11773D]">Profil</p>
+        <h3 class="mt-1 text-[28px] font-semibold text-[#101828]">Edit Profil</h3>
+      </div>
+      <button type="button" data-close-profile-modal class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xl text-gray-600 hover:bg-gray-200">×</button>
+    </div>
+
+    <form method="POST" action="/dashboard/profil/index.php" class="space-y-5">
+      <input type="hidden" name="action" value="update_profile" />
+
+      <div>
+        <label for="full_name" class="mb-2 block text-sm font-medium text-[#344054]">Nama Lengkap</label>
+        <input id="full_name" name="full_name" type="text" value="<?= htmlspecialchars($fullName) ?>" class="w-full rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-[15px] text-[#101828] outline-none focus:border-[#11773D]" required />
+      </div>
+
+      <div>
+        <label for="city" class="mb-2 block text-sm font-medium text-[#344054]">Lokasi</label>
+        <input id="city" name="city" type="text" value="<?= htmlspecialchars($city) ?>" class="w-full rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-[15px] text-[#101828] outline-none focus:border-[#11773D]" />
+      </div>
+
+      <div>
+        <label for="avatar_url" class="mb-2 block text-sm font-medium text-[#344054]">URL Avatar</label>
+        <input id="avatar_url" name="avatar_url" type="url" value="<?= htmlspecialchars($avatarUrl) ?>" class="w-full rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-[15px] text-[#101828] outline-none focus:border-[#11773D]" placeholder="https://..." />
+      </div>
+
+      <div>
+        <label for="bio" class="mb-2 block text-sm font-medium text-[#344054]">Bio</label>
+        <textarea id="bio" name="bio" rows="4" class="w-full rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-[15px] text-[#101828] outline-none focus:border-[#11773D]" placeholder="Ceritakan tentang diri Anda..."><?= htmlspecialchars($bio) ?></textarea>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" data-close-profile-modal class="rounded-2xl border border-[#D0D5DD] px-5 py-3 text-[15px] font-semibold text-[#344054] hover:bg-gray-50">Batal</button>
+        <button type="submit" class="rounded-2xl bg-[#11773D] px-5 py-3 text-[15px] font-semibold text-white hover:bg-[#0d5d31]">Simpan Perubahan</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <?php include_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutclose.php'; ?>
