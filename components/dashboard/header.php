@@ -77,7 +77,7 @@ $headerConfig = [
 $currentConfig = $headerConfig[$pathname] ?? $headerConfig['/admin'];
 ?>
 
-<header class="rounded-3xl relative flex flex-col lg:flex-row lg:items-center justify-between gap-4 z-0 p-8 pb-12">
+<header class="rounded-3xl sticky top-0 bg-inherit flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-8 z-999" <?php if (!empty($currentConfig['src'])) ?> style="background-image: url(<?php echo htmlspecialchars($currentConfig['src']) ?>); background-size: 50%; background-repeat:no-repeat;background-position: center;">
   <div class="lg:w-1/2 z-10 w-full">
     <h1 class="mb-2 text-3xl font-bold"><?= htmlspecialchars($currentConfig['title']) ?></h1>
 
@@ -89,17 +89,17 @@ $currentConfig = $headerConfig[$pathname] ?? $headerConfig['/admin'];
       <?= nl2br(str_replace('<br />', "\n", $currentConfig['description'])) ?>
     </p>
 
-    <?php if (!empty($currentConfig['src'])): ?>
-      <div class="lg:w-1/2 absolute top-2 right-60 -z-10 hidden lg:flex justify-end w-full h-full">
+    <!-- <?php if (!empty($currentConfig['src'])): ?>
+      <div class="lg:w-1/2 absolute right-60 -z-10 hidden lg:flex justify-end w-full h-full">
         <img
           src="<?= htmlspecialchars($currentConfig['src']) ?>"
           alt="Nature landscape"
-          class="object-cover w-full h-full" />
+          class="object-contain w-full h-full" />
       </div>
-    <?php endif; ?>
+    <?php endif; ?> -->
   </div>
 
-  <div class="absolute top-8 right-8 z-10 hidden items-center gap-6 lg:flex">
+  <div class="z-10 hidden items-center place-self-start gap-6 lg:flex">
     <!-- Notification -->
     <div class="relative" id="notificationDropdownContainer">
       <button
@@ -118,70 +118,72 @@ $currentConfig = $headerConfig[$pathname] ?? $headerConfig['/admin'];
 
       <div
         id="notificationMenu"
-        class="hidden absolute right-0 mt-3 w-[390px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_12px_40px_rgba(17,119,61,0.12)] z-50">
-        <div class="flex items-center justify-between border-b border-gray-100 bg-[#F3FAF5] px-4 py-3">
-          <div class="text-[15px] font-bold text-gray-800">
-            Notifikasi <?php echo !empty($unreadNotifications) ? count($unreadNotifications) . ' baru' : 'baru'; ?>
+        class="hidden absolute right-0 mt-3 w-97.5 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_12px_40px_rgba(17,119,61,0.12)] z-50">
+        <div class="sticky top-0">
+          <div class="flex items-center justify-between border-b border-gray-100 bg-[#F3FAF5] px-4 py-3">
+            <div class="text-[15px] font-bold text-gray-800">
+              Notifikasi <?php echo !empty($unreadNotifications) ? count($unreadNotifications) . ' baru' : 'baru'; ?>
+            </div>
+            <button
+              id="readAllNotificationsBtn"
+              type="button"
+              class="flex h-8 w-8 items-center justify-center rounded-full text-[#11773D] transition hover:bg-white hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Baca semua notifikasi"
+              <?php if (empty($unreadNotifications)): ?>disabled<?php endif; ?>>
+              <i class="fa-solid fa-check-double text-sm"></i>
+            </button>
           </div>
-          <button
-            id="readAllNotificationsBtn"
-            type="button"
-            class="flex h-8 w-8 items-center justify-center rounded-full text-[#11773D] transition hover:bg-white hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label="Baca semua notifikasi"
-            <?php if (empty($unreadNotifications)): ?>disabled<?php endif; ?>>
-            <i class="fa-solid fa-check-double text-sm"></i>
-          </button>
-        </div>
 
-        <div class="max-h-[420px] overflow-y-auto">
-          <?php if (empty($notifications)): ?>
-            <div class="px-4 py-6 text-center text-sm text-gray-500">no notifications.</div>
-          <?php else: ?>
-            <?php foreach (array_slice($notifications, 0, 6) as $notification): ?>
-              <?php
-              $notificationTitle = trim((string) ($notification['title'] ?? 'Notifikasi'));
-              $notificationMessage = trim((string) ($notification['message'] ?? ''));
-              $notificationTime = $notification['created_at'] ?? null;
-              $formattedTime = $notificationTime ? date('d M Y', strtotime($notificationTime)) : 'Baru';
-              $notificationIsRead = $notification['is_read'] ?? false;
-              $notificationIsUnread = !(
-                $notificationIsRead === true ||
-                $notificationIsRead === 'true' ||
-                $notificationIsRead === 1 ||
-                $notificationIsRead === '1'
-              );
-              ?>
-              <div class="flex gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0 <?= $notificationIsUnread ? 'bg-[#F7FBF8]' : '' ?>">
-                <div class="relative mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EAF7F0] text-[#11773D]">
-                  <i class="fa-solid fa-bell text-sm"></i>
-                  <?php if ($notificationIsUnread): ?>
-                    <span class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-[#11773D] ring-2 ring-white"></span>
-                  <?php endif; ?>
-                </div>
-
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2 text-[15px] <?= $notificationIsUnread ? 'font-bold text-gray-900' : 'font-semibold text-gray-600' ?>">
-                    <span><?= htmlspecialchars($notificationTitle ?: 'Notifikasi') ?></span>
+          <div class="max-h-[420px] overflow-y-auto">
+            <?php if (empty($notifications)): ?>
+              <div class="px-4 py-6 text-center text-sm text-gray-500">no notifications.</div>
+            <?php else: ?>
+              <?php foreach (array_slice($notifications, 0, 6) as $notification): ?>
+                <?php
+                $notificationTitle = trim((string) ($notification['title'] ?? 'Notifikasi'));
+                $notificationMessage = trim((string) ($notification['message'] ?? ''));
+                $notificationTime = $notification['created_at'] ?? null;
+                $formattedTime = $notificationTime ? date('d M Y', strtotime($notificationTime)) : 'Baru';
+                $notificationIsRead = $notification['is_read'] ?? false;
+                $notificationIsUnread = !(
+                  $notificationIsRead === true ||
+                  $notificationIsRead === 'true' ||
+                  $notificationIsRead === 1 ||
+                  $notificationIsRead === '1'
+                );
+                ?>
+                <div class="flex gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0 <?= $notificationIsUnread ? 'bg-[#F7FBF8]' : '' ?>">
+                  <div class="relative mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EAF7F0] text-[#11773D]">
+                    <i class="fa-solid fa-bell text-sm"></i>
                     <?php if ($notificationIsUnread): ?>
-                      <span class="h-2 w-2 rounded-full bg-[#11773D]"></span>
+                      <span class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-[#11773D] ring-2 ring-white"></span>
                     <?php endif; ?>
                   </div>
-                  <?php if ($notificationMessage !== ''): ?>
-                    <div class="mt-1 text-sm <?= $notificationIsUnread ? 'text-gray-700' : 'text-gray-500' ?>">
-                      <?= htmlspecialchars($notificationMessage) ?>
-                    </div>
-                  <?php endif; ?>
-                  <div class="mt-2 text-[11px] <?= $notificationIsUnread ? 'text-gray-500' : 'text-gray-400' ?>">
-                    <?= htmlspecialchars($formattedTime) ?>
-                  </div>
-                </div>
 
-                <button type="button" class="self-start text-gray-400 hover:text-gray-600">
-                  <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
-                </button>
-              </div>
-            <?php endforeach; ?>
-          <?php endif; ?>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 text-[15px] <?= $notificationIsUnread ? 'font-bold text-gray-900' : 'font-semibold text-gray-600' ?>">
+                      <span><?= htmlspecialchars($notificationTitle ?: 'Notifikasi') ?></span>
+                      <?php if ($notificationIsUnread): ?>
+                        <span class="h-2 w-2 rounded-full bg-[#11773D]"></span>
+                      <?php endif; ?>
+                    </div>
+                    <?php if ($notificationMessage !== ''): ?>
+                      <div class="mt-1 text-sm <?= $notificationIsUnread ? 'text-gray-700' : 'text-gray-500' ?>">
+                        <?= htmlspecialchars($notificationMessage) ?>
+                      </div>
+                    <?php endif; ?>
+                    <div class="mt-2 text-[11px] <?= $notificationIsUnread ? 'text-gray-500' : 'text-gray-400' ?>">
+                      <?= htmlspecialchars($formattedTime) ?>
+                    </div>
+                  </div>
+
+                  <button type="button" class="self-start text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                  </button>
+                </div>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </div>
         </div>
       </div>
     </div>
