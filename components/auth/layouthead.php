@@ -1,5 +1,9 @@
 <?php
-include_once((__DIR__ . "/utils/connection.php"));
+include_once $_SERVER['DOCUMENT_ROOT'] . "/utils/connection.php";
+if (isset($_COOKIE['remember_me'])) {
+    header('Location: /dashboard/index.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -13,4 +17,4 @@ include_once((__DIR__ . "/utils/connection.php"));
     <link rel="stylesheet" href="/style.css">
 </head>
 
-<body class="bg-linear-to-br from-green-50 via-white to-green-50 min-h-screen text-gray-800 antialiased"></body>
+<body class="bg-linear-to-br from-green-50 via-white to-green-50 min-h-screen text-gray-800 antialiased">
