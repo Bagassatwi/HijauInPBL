@@ -21,7 +21,10 @@ $pathname = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 $fullName = $userProfile['full_name'] ?? 'Tamu';
 $firstName = explode(' ', trim($fullName))[0];
-$levelInfo = getCurrentLevel((int)($userProfile['xp'] ?? 0), $levels);
+$userXp = (int)($userProfile['xp'] ?? 0);
+$levelInfo = getCurrentLevel($userXp, $levels);
+$progressInfo = getLevelProgress($userXp);
+$progressPercent = min(100, max(0, (int) round(($userXp / max(1, $progressInfo['nextXp'])) * 100)));
 
 $headerConfig = [
   '/admin' => [
@@ -125,17 +128,74 @@ $currentConfig = $headerConfig[$pathname] ?? $headerConfig['/admin'];
 
       <div
         id="profileMenu"
-        class="hidden absolute right-0 mt-3 w-52 rounded-2xl border border-gray-100 bg-white p-2 shadow-lg z-50">
-        <a
-          href="/logout.php"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-semibold text-red-600 transition-all duration-200 hover:bg-red-50">
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-100">
-            <svg class="h-4 w-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
+        class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-gray-100 bg-white p-2 shadow-[0_12px_40px_rgba(17,119,61,0.12)] z-50">
+        <div class="mb-3 rounded-2xl bg-[#F3FAF5] p-3 shadow-inner shadow-[#E0F2E7]">
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <span class="inline-flex items-center rounded-full bg-[#11773D] px-2.5 py-1 text-[11px] font-bold tracking-wide text-white">
+              LEVEL <?= htmlspecialchars((string) ($levelInfo['level'] ?? 1)) ?>
+            </span>
+            <span class="text-[12px] font-semibold text-[#11773D]">
+              <?= htmlspecialchars((string) $progressPercent) ?>%
+            </span>
           </div>
-          <span>Logout</span>
-        </a>
+
+          <div class="mb-2 h-2.5 w-full overflow-hidden rounded-full bg-[#DDEFE3]">
+            <div class="h-full rounded-full bg-gradient-to-r from-[#11773D] to-[#45A66A]" style="width: <?= htmlspecialchars((string) $progressPercent) ?>%"></div>
+          </div>
+
+          <div class="text-[12px] font-medium text-gray-700">
+            <?= number_format($userXp, 0, ',', '.') ?> / <?= number_format($progressInfo['nextXp'], 0, ',', '.') ?> XP
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <a href="/dashboard/profil" class="group flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200 hover:bg-green-50">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF7F0] text-[#11773D]">
+              <i class="fa-solid fa-user text-sm"></i>
+            </div>
+            <div class="flex-1 text-left">
+              <div class="text-[15px] font-semibold text-gray-800">Lihat Profil</div>
+              <div class="text-[11px] text-gray-500">Informasi akun & bio aktif</div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-xs text-gray-400 group-hover:text-[#11773D]"></i>
+          </a>
+
+          <a href="/dashboard/profil" class="group flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200 hover:bg-green-50">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF7F0] text-[#11773D]">
+              <i class="fa-solid fa-award text-sm"></i>
+            </div>
+            <div class="flex-1 text-left">
+              <div class="text-[15px] font-semibold text-gray-800">Riwayat Poin &amp; Aksi</div>
+              <div class="text-[11px] text-gray-500">Koleksi lencana &amp; dampak hijau</div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-xs text-gray-400 group-hover:text-[#11773D]"></i>
+          </a>
+
+          <a href="/dashboard/profil" class="group flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200 hover:bg-green-50">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF7F0] text-[#11773D]">
+              <i class="fa-solid fa-gear text-sm"></i>
+            </div>
+            <div class="flex-1 text-left">
+              <div class="text-[15px] font-semibold text-gray-800">Pengaturan Akun</div>
+              <div class="text-[11px] text-gray-500">Preferensi, keamanan, &amp; notifikasi</div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-xs text-gray-400 group-hover:text-[#11773D]"></i>
+          </a>
+
+          <div class="my-1 border-t border-gray-100"></div>
+
+          <a
+            href="/logout.php"
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-semibold text-red-600 transition-all duration-200 hover:bg-red-50">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100">
+              <i class="fa-solid fa-right-from-bracket text-sm"></i>
+            </div>
+            <div class="flex-1 text-left">
+              <div>Logout</div>
+              <div class="text-[11px] text-red-400">Keluar dari sesi ini</div>
+            </div>
+          </a>
+        </div>
       </div>
     </div>
   </div>
