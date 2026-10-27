@@ -2,72 +2,29 @@
 session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/community.php';
 
 $userId = $_SESSION['user']['id'] ?? '';
+$joinedCommunityIds = fetchJoinedCommunityIdsByUser($userId);
+$joinedCommunityLookup = array_flip($joinedCommunityIds);
+$communitySummary = fetchCommunitySummaryForUser($userId);
 
-// Chart Data
-$weeklyChartData = [
-  ['day' => 'Sen', 'value' => 160],
-  ['day' => 'Sel', 'value' => 270],
-  ['day' => 'Rab', 'value' => 200],
-  ['day' => 'Kam', 'value' => 200],
-  ['day' => 'Jum', 'value' => 390],
-  ['day' => 'Sab', 'value' => 320],
-  ['day' => 'Min', 'value' => 200],
-];
+$weeklyChartData = fetchCommunityWeeklyActivity();
+if (empty($weeklyChartData)) {
+  $weeklyChartData = [
+    ['day' => 'Sen', 'value' => 160],
+    ['day' => 'Sel', 'value' => 270],
+    ['day' => 'Rab', 'value' => 200],
+    ['day' => 'Kam', 'value' => 200],
+    ['day' => 'Jum', 'value' => 390],
+    ['day' => 'Sab', 'value' => 320],
+    ['day' => 'Min', 'value' => 200],
+  ];
+}
 
-// Mock Datasets
-$popularCommunities = [
-  ['image' => '/assets/dashboard-komunitas/bumi.png', 'title' => 'Hijau Bersama', 'members' => '12.450'],
-  ['image' => '/assets/dashboard-komunitas/tanaman.png', 'title' => 'Peduli Lingkungan', 'members' => '8.230'],
-  ['image' => '/assets/dashboard-komunitas/sampah.png', 'title' => 'Zero Waste ID', 'members' => '6.890'],
-  ['image' => '/assets/dashboard-komunitas/bike.png', 'title' => 'Go Green IDN', 'members' => '5.120'],
-  ['image' => '/assets/dashboard-komunitas/pohon.png', 'title' => 'Tanam Pohon', 'members' => '4.560'],
-];
-
-$posts = [
-  [
-    'avatar' => '/assets/ava1.jpg',
-    'image' => '/assets/dashboard-komunitas/post1.png',
-    'name' => 'Sinta Ayu',
-    'badge' => 'Eco Guardian',
-    'community' => 'Hijau Bersama',
-    'time' => '2 jam yang lalu',
-    'likes' => '128',
-    'comments' => '24',
-    'text' => 'Baru saja ikut aksi bersih-bersih pantai di Bali bersama komunitas lokal! Seru banget bisa ketemu banyak orang yang punya visi sama 🌊💚'
-  ],
-  [
-    'avatar' => '/assets/ava2.jpg',
-    'image' => '/assets/dashboard-komunitas/post2.png',
-    'name' => 'Raka Pratama',
-    'badge' => 'Eco Hero',
-    'community' => 'Zero Waste ID',
-    'time' => '5 jam yang lalu',
-    'likes' => '96',
-    'comments' => '18',
-    'text' => 'Tips simpel mengurangi plastik sekali pakai di rumah:<br/>1. Bawa tumbler sendiri<br/>2. Gunakan tas belanja kain<br/>3. Pilih produk isi ulang ... <span class="font-semibold text-[#11773D]">Selengkapnya</span>'
-  ],
-  [
-    'avatar' => '/assets/ava3.jpg',
-    'image' => '/assets/dashboard-komunitas/post3.png',
-    'name' => 'Nadia Putri',
-    'badge' => 'Eco Warrior',
-    'community' => 'Tanam Pohon',
-    'time' => '1 hari yang lalu',
-    'likes' => '210',
-    'comments' => '32',
-    'text' => 'Hari ini kami menanam 100 bibit pohon di daerah pegunungan 🌳<br/>Langkah kecil untuk masa depan yang lebih hijau!'
-  ]
-];
-
-$myCommunitiesJoined = [
-  ['image' => '/assets/dashboard-komunitas/bumi.png', 'title' => 'Hijau Bersama', 'desc' => 'Bersama menanam harapan, bersama menjaga bumi.', 'date' => 'Bergabung sejak 12 Mar 2025', 'members' => '12.450', 'posts' => '320'],
-  ['image' => '/assets/dashboard-komunitas/sampah.png', 'title' => 'Zero Waste ID', 'desc' => 'Mengurangi sampah, menciptakan masa depan berkelanjutan.', 'date' => 'Bergabung sejak 20 Feb 2025', 'members' => '6.890', 'posts' => '158'],
-  ['image' => '/assets/dashboard-komunitas/tanaman.png', 'title' => 'Peduli Lingkungan', 'desc' => 'Aksi kecil, dampak besar untuk lingkungan sekitar kita.', 'date' => 'Bergabung sejak 5 Jan 2025', 'members' => '8.230', 'posts' => '186'],
-  ['image' => '/assets/dashboard-komunitas/pohon.png', 'title' => 'Tanam Pohon', 'desc' => 'Satu pohon hari ini, sejuta oksigen untuk nanti.', 'date' => 'Bergabung sejak 18 Apr 2025', 'members' => '4.560', 'posts' => '102'],
-  ['image' => '/assets/dashboard-komunitas/bike.png', 'title' => 'Go Green', 'desc' => 'Gaya hidup hijau, pilihan bijak untuk bumi yang lebih baik.', 'date' => 'Dibuat pada 10 Feb 2025', 'members' => '5.120', 'posts' => '97']
-];
+$popularCommunities = fetchPopularCommunities(5);
+$posts = fetchCommunityPosts();
+$myCommunitiesJoined = fetchJoinedCommunitiesByUser($userId);
 
 $myCommunitiesCreated = [
   ['image' => '/assets/dashboard-komunitas/bike.png', 'title' => 'Go Green', 'desc' => 'Gaya hidup hijau, pilihan bijak untuk bumi yang lebih baik.', 'date' => 'Dibuat pada 10 Feb 2025', 'members' => '5.120', 'posts' => '97']
@@ -81,20 +38,14 @@ $categories = [
   ['image' => '/assets/dashboard-komunitas/gayahidup.png', 'title' => 'Gaya Hidup Hijau', 'count' => '1.032 komunitas']
 ];
 
-$discoverCommunities = [
-  ['image' => '/assets/dashboard-komunitas/bumi.png', 'title' => 'Hijau Hijau Indoonesia', 'verified' => true, 'tag' => 'Lingkungan', 'tagColor' => 'bg-[#E8F5E9] text-[#11773D]', 'desc' => 'Komunitas untuk berbagi tips dan aksi nyata.', 'loc' => 'Yogyakarta, Indonesia', 'date' => 'Dibuat 10 Mar 2024', 'members' => '5.120', 'posts' => '97'],
-  ['image' => '/assets/dashboard-komunitas/sampah.png', 'title' => 'Zero Waste ID', 'verified' => true, 'tag' => 'Sampah & Daur Ulang', 'tagColor' => 'bg-[#E8F5E9] text-[#11773D]', 'desc' => 'Gaya hidup hijau ini, pilihan bijak untuk bumi yang lebih baik.', 'loc' => 'Yogyakarta, Indonesia', 'date' => 'Dibuat 10 Mar 2024', 'members' => '5.120', 'posts' => '97'],
-  ['image' => '/assets/dashboard-komunitas/bike.png', 'title' => 'Go Green', 'verified' => true, 'tag' => 'Gaya Hidup Hijau', 'tagColor' => 'bg-[#E8F5E9] text-[#11773D]', 'desc' => 'Gaya hidup hijau ini, pilihan bijak untuk bumi yang lebih baik.', 'loc' => 'Yogyakarta, Indonesia', 'date' => 'Dibuat 10 Mar 2024', 'members' => '5.120', 'posts' => '97'],
-  ['image' => '/assets/dashboard-komunitas/pohon.png', 'title' => 'Tanam Pohon', 'verified' => true, 'tag' => 'Lingkungan', 'tagColor' => 'bg-[#E8F5E9] text-[#11773D]', 'desc' => 'Satu pohon hari ini, sejuta oksigen untuk nanti.', 'loc' => 'Surabaya, Indonesia', 'date' => 'Dibuat 18 Apr 2024', 'members' => '4.560', 'posts' => '102']
-];
-
-$contributors = [
-  ['rank' => 1, 'avatar' => '/assets/ava1.jpg', 'name' => 'Dwi Kurniawan', 'badge' => 'Eco Guardian', 'score' => '2.450'],
-  ['rank' => 2, 'avatar' => '/assets/ava2.jpg', 'name' => 'Sinta Ayu', 'badge' => 'Eco Warrior', 'score' => '1.980'],
-  ['rank' => 3, 'avatar' => '/assets/ava3.jpg', 'name' => 'Raka Pratama', 'badge' => 'Eco Hero', 'score' => '1.650'],
-  ['rank' => 4, 'avatar' => '/assets/ava4.jpg', 'name' => 'Bagas Aditya', 'badge' => 'Eco Lover', 'score' => '1.250'],
-  ['rank' => 5, 'avatar' => '/assets/ava5.jpg', 'name' => 'Maya Lestari', 'badge' => 'Eco Starter', 'score' => '980']
-];
+$discoverCommunities = fetchDiscoverCommunities();
+$contributors = fetchTopCommunityContributors(5);
+if (!empty($contributors)) {
+  foreach ($contributors as $index => $contributor) {
+    $contributors[$index]['rank'] = $index + 1;
+    $contributors[$index]['badge'] = $contributors[$index]['badge'] ?? 'Eco Contributor';
+  }
+}
 
 $suggestions = [
   ['image' => '/assets/dashboard-komunitas/green.png', 'title' => 'Green Lifestyle ID', 'members' => '3.210 anggota'],
@@ -128,7 +79,10 @@ $suggestions = [
               <input type="text" placeholder="Cari komunitas atau topik..." class="rounded-xl focus:border-[#11773D] w-full py-3 pl-10 pr-4 text-base font-semibold border border-gray-200 outline-none" />
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             </div>
-            <button type="button" class="flex h-13 items-center gap-2 rounded-xl border border-[#11773D] bg-white px-6 text-[15px] font-semibold text-[#11773D]">
+            <button
+              id="openCreateCommunityModalBtn"
+              type="button"
+              class="flex h-13 items-center gap-2 rounded-xl border border-[#11773D] bg-white px-6 text-[15px] font-semibold text-[#11773D]">
               ➕ Buat Komunitas
             </button>
           </div>
@@ -141,20 +95,32 @@ $suggestions = [
               </button>
             </div>
 
-            <div class="flex items-center gap-5 overflow-x-auto pb-2">
-              <?php foreach ($popularCommunities as $pop): ?>
-                <div class="w-42.5 shrink-0 rounded-[20px] border border-[#EAECF0] bg-white px-5 py-6 text-center shadow-[0_2px_10px_rgba(16,24,40,0.04)] transition hover:shadow-md">
-                  <div class="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-[#EEF4EC]">
-                    <img src="<?= htmlspecialchars($pop['image']) ?>" alt="<?= htmlspecialchars($pop['title']) ?>" class="w-20.5 h-20.5 object-contain" />
+            <?php if (empty($popularCommunities)): ?>
+              <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-gray-500">
+                Belum ada komunitas yang tersedia.
+              </div>
+            <?php else: ?>
+              <div class="flex items-center gap-5 overflow-x-auto pb-2">
+                <?php foreach ($popularCommunities as $pop): ?>
+                  <?php $isJoined = !empty($pop['id']) && isset($joinedCommunityLookup[(string) $pop['id']]); ?>
+                  <div class="max-w-56 w-full wrap-break-word shrink-0 rounded-[20px] grid grid-rows-[1fr_0.75fr_auto_auto] border border-[#EAECF0] bg-white px-5 py-6 text-center shadow-[0_2px_10px_rgba(16,24,40,0.04)] transition hover:shadow-md">
+                    <div class="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-[#EEF4EC]">
+                      <img src="<?= htmlspecialchars($pop['image']) ?>" alt="<?= htmlspecialchars($pop['title']) ?>" class="w-20.5 h-20.5 object-contain" />
+                    </div>
+                    <h4 class="text-[20px] font-semibold text-[#101828]"><?= htmlspecialchars($pop['title']) ?></h4>
+                    <p class="mt-5 text-[15px] text-[#667085]"><?= htmlspecialchars($pop['members']) ?> anggota</p>
+                    <button
+                      type="button"
+                      class="join-community-btn mt-7 flex h-11.5 w-full items-center justify-center rounded-xl border border-[#11773D] text-[18px] font-semibold text-[#11773D] transition hover:bg-[#11773D] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                      data-community-id="<?= htmlspecialchars((string) ($pop['id'] ?? '')) ?>"
+                      data-joined="<?= $isJoined ? '1' : '0' ?>"
+                      <?= empty($pop['id'] ?? '') ? 'disabled' : '' ?>>
+                      <?= $isJoined ? 'Lihat Komunitas' : 'Bergabung' ?>
+                    </button>
                   </div>
-                  <h4 class="text-[20px] font-semibold leading-none text-[#101828]"><?= htmlspecialchars($pop['title']) ?></h4>
-                  <p class="mt-5 text-[15px] text-[#667085]"><?= htmlspecialchars($pop['members']) ?> anggota</p>
-                  <a href="/dashboard/komunitas/detail" class="mt-7 flex h-11.5 w-full items-center justify-center rounded-xl border border-[#11773D] text-[18px] font-semibold text-[#11773D] transition hover:bg-[#11773D] hover:text-white">
-                    Bergabung
-                  </a>
-                </div>
-              <?php endforeach; ?>
-            </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
           </div>
 
           <div>
@@ -162,43 +128,49 @@ $suggestions = [
               <h3 class="text-lg font-bold text-gray-800">Postingan Terbaru</h3>
               <p class="text-red-500 text-sm font-semibold">Fitur filter postingan sedang dalam tahap pengembangan (Coming Soon)</p>
             </div>
-            <div class="flex flex-col gap-6">
-              <?php foreach ($posts as $post): ?>
-                <div class="flex items-start justify-between border-b border-[#EAECF0] py-7 last:border-b-0">
-                  <div class="flex flex-1 gap-4">
-                    <div class="relative h-13 w-13 shrink-0 overflow-hidden rounded-full">
-                      <img src="<?= htmlspecialchars($post['avatar']) ?>" alt="<?= htmlspecialchars($post['name']) ?>" class="w-full h-full object-cover" />
+            <?php if (empty($posts)): ?>
+              <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-gray-500">
+                Belum ada postingan di komunitas ini.
+              </div>
+            <?php else: ?>
+              <div class="flex flex-col gap-6">
+                <?php foreach ($posts as $post): ?>
+                  <div class="flex items-start justify-between border-b border-[#EAECF0] py-7 last:border-b-0">
+                    <div class="flex flex-1 gap-4">
+                      <div class="relative h-13 w-13 shrink-0 overflow-hidden rounded-full">
+                        <img src="<?= htmlspecialchars($post['avatar']) ?>" alt="<?= htmlspecialchars($post['name']) ?>" class="w-full h-full object-cover" />
+                      </div>
+                      <div class="flex-1">
+                        <div class="flex items-center gap-3">
+                          <h4 class="text-[20px] font-semibold text-[#101828]"><?= htmlspecialchars($post['name']) ?></h4>
+                          <span class="rounded-full bg-[#E8F5E9] px-3 py-1 text-[13px] font-semibold text-[#11773D]">
+                            <?= htmlspecialchars($post['badge']) ?>
+                          </span>
+                        </div>
+                        <p class="mt-1 text-[15px] text-[#667085]">
+                          di <span class="font-semibold text-[#475467]"><?= htmlspecialchars($post['community']) ?></span> • <?= htmlspecialchars($post['time']) ?>
+                        </p>
+                        <div class="mt-4 max-w-175 text-[17px] leading-8 text-[#344054]">
+                          <?= $post['text'] ?>
+                        </div>
+                        <div class="mt-6 flex items-center gap-8">
+                          <button type="button" class="flex items-center gap-2 text-[#667085]">
+                            ❤️ <span class="text-[15px]"><?= htmlspecialchars($post['likes']) ?></span>
+                          </button>
+                          <button type="button" class="flex items-center gap-2 text-[#667085]">
+                            💬 <span class="text-[15px]"><?= htmlspecialchars($post['comments']) ?></span>
+                          </button>
+                          <button type="button" class="text-[#667085]">🔗 Share</button>
+                        </div>
+                      </div>
                     </div>
-                    <div class="flex-1">
-                      <div class="flex items-center gap-3">
-                        <h4 class="text-[20px] font-semibold text-[#101828]"><?= htmlspecialchars($post['name']) ?></h4>
-                        <span class="rounded-full bg-[#E8F5E9] px-3 py-1 text-[13px] font-semibold text-[#11773D]">
-                          <?= htmlspecialchars($post['badge']) ?>
-                        </span>
-                      </div>
-                      <p class="mt-1 text-[15px] text-[#667085]">
-                        di <span class="font-semibold text-[#475467]"><?= htmlspecialchars($post['community']) ?></span> • <?= htmlspecialchars($post['time']) ?>
-                      </p>
-                      <div class="mt-4 max-w-175 text-[17px] leading-8 text-[#344054]">
-                        <?= $post['text'] ?>
-                      </div>
-                      <div class="mt-6 flex items-center gap-8">
-                        <button type="button" class="flex items-center gap-2 text-[#667085]">
-                          ❤️ <span class="text-[15px]"><?= htmlspecialchars($post['likes']) ?></span>
-                        </button>
-                        <button type="button" class="flex items-center gap-2 text-[#667085]">
-                          💬 <span class="text-[15px]"><?= htmlspecialchars($post['comments']) ?></span>
-                        </button>
-                        <button type="button" class="text-[#667085]">🔗 Share</button>
-                      </div>
+                    <div class="ml-8 flex flex-col items-end">
+                      <img src="<?= htmlspecialchars($post['image']) ?>" alt="" class="w-47.5 h-30 rounded-xl object-cover" />
                     </div>
                   </div>
-                  <div class="ml-8 flex flex-col items-end">
-                    <img src="<?= htmlspecialchars($post['image']) ?>" alt="" class="w-47.5 h-30 rounded-xl object-cover" />
-                  </div>
-                </div>
-              <?php endforeach; ?>
-            </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
           </div>
         </div>
 
@@ -209,7 +181,10 @@ $suggestions = [
               <input placeholder="Cari komunitas saya..." class="h-13 w-full rounded-xl border border-[#D0D5DD] pl-10 pr-10 text-[15px] outline-none" />
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             </div>
-            <button type="button" class="flex h-13 items-center gap-2 rounded-xl border border-[#11773D] bg-white px-6 text-[15px] font-semibold text-[#11773D]">
+            <button
+              id="openCreateCommunityModalBtnSecondary"
+              type="button"
+              class="flex h-13 items-center gap-2 rounded-xl border border-[#11773D] bg-white px-6 text-[15px] font-semibold text-[#11773D]">
               ➕ Buat Komunitas
             </button>
           </div>
@@ -221,39 +196,45 @@ $suggestions = [
 
           <div>
             <h3 class="mb-4 text-lg font-bold text-gray-800">Komunitas yang Saya Ikuti</h3>
-            <div class="flex flex-col gap-4">
-              <?php foreach ($myCommunitiesJoined as $item): ?>
-                <div class="flex items-center justify-between border-b border-[#EAECF0] py-5">
-                  <div class="flex flex-1 items-center gap-5">
-                    <div class="flex h-18.5 w-18.5 items-center justify-center rounded-full bg-[#EEF4EC]">
-                      <img src="<?= htmlspecialchars($item['image']) ?>" alt="" class="w-17 h-17 object-contain" />
-                    </div>
-                    <div>
-                      <h3 class="text-[24px] font-semibold text-[#101828]"><?= htmlspecialchars($item['title']) ?></h3>
-                      <p class="mt-1 max-w-90 text-[15px] leading-7 text-[#667085]"><?= htmlspecialchars($item['desc']) ?></p>
-                      <div class="mt-2 flex items-center gap-2 text-[14px] text-[#667085]">
-                        📅 <?= htmlspecialchars($item['date']) ?>
+            <?php if (empty($myCommunitiesJoined)): ?>
+              <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-gray-500">
+                Anda belum mengikuti komunitas apapun.
+              </div>
+            <?php else: ?>
+              <div class="flex flex-col gap-4">
+                <?php foreach ($myCommunitiesJoined as $item): ?>
+                  <div class="flex items-center justify-between border-b border-[#EAECF0] py-5">
+                    <div class="flex flex-1 items-center gap-5">
+                      <div class="flex h-18.5 w-18.5 items-center justify-center rounded-full bg-[#EEF4EC]">
+                        <img src="<?= htmlspecialchars($item['image']) ?>" alt="" class="w-17 h-17 object-contain" />
+                      </div>
+                      <div>
+                        <h3 class="text-[24px] font-semibold text-[#101828]"><?= htmlspecialchars($item['title']) ?></h3>
+                        <p class="mt-1 max-w-90 text-[15px] leading-7 text-[#667085]"><?= htmlspecialchars($item['desc']) ?></p>
+                        <div class="mt-2 flex items-center gap-2 text-[14px] text-[#667085]">
+                          📅 <?= htmlspecialchars($item['date']) ?>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div class="mr-12 flex gap-14">
-                    <div class="text-center">
-                      <h4 class="text-[30px] font-semibold leading-none text-[#11773D]"><?= htmlspecialchars($item['members']) ?></h4>
-                      <p class="mt-2 text-[15px] text-[#667085]">Anggota</p>
+                    <div class="mr-12 flex gap-14">
+                      <div class="text-center">
+                        <h4 class="text-[30px] font-semibold leading-none text-[#11773D]"><?= htmlspecialchars($item['members']) ?></h4>
+                        <p class="mt-2 text-[15px] text-[#667085]">Anggota</p>
+                      </div>
+                      <div class="text-center">
+                        <h4 class="text-[30px] font-semibold leading-none text-[#11773D]"><?= htmlspecialchars($item['posts']) ?></h4>
+                        <p class="mt-2 text-[15px] text-[#667085]">Postingan</p>
+                      </div>
                     </div>
-                    <div class="text-center">
-                      <h4 class="text-[30px] font-semibold leading-none text-[#11773D]"><?= htmlspecialchars($item['posts']) ?></h4>
-                      <p class="mt-2 text-[15px] text-[#667085]">Postingan</p>
+                    <div class="flex items-center gap-6">
+                      <a href="/dashboard/komunitas/detail?id=<?= urlencode((string) ($item['id'] ?? '')) ?>" class="flex h-11.5 items-center gap-2 rounded-xl border border-[#11773D] bg-white px-5 text-[15px] font-semibold text-[#11773D] transition hover:bg-[#11773D] hover:text-white">
+                        ⚙️ Kelola
+                      </a>
                     </div>
                   </div>
-                  <div class="flex items-center gap-6">
-                    <a href="/dashboard/komunitas/detail" class="flex h-11.5 items-center gap-2 rounded-xl border border-[#11773D] bg-white px-5 text-[15px] font-semibold text-[#11773D] transition hover:bg-[#11773D] hover:text-white">
-                      ⚙️ Kelola
-                    </a>
-                  </div>
-                </div>
-              <?php endforeach; ?>
-            </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
           </div>
         </div>
 
@@ -287,45 +268,57 @@ $suggestions = [
 
           <div>
             <h3 class="mb-4 text-lg font-bold text-gray-800">Semua Komunitas</h3>
-            <div class="flex flex-col gap-4">
-              <?php foreach ($discoverCommunities as $disc): ?>
-                <div class="flex items-center justify-between rounded-[20px] border border-[#EAECF0] px-6 py-6">
-                  <div class="flex flex-1 items-center gap-6">
-                    <div class="flex h-20.5 w-20.5 items-center justify-center rounded-full bg-[#EEF4EC]">
-                      <img src="<?= htmlspecialchars($disc['image']) ?>" alt="" class="w-18.5 h-18.5 object-contain" />
+            <?php if (empty($discoverCommunities)): ?>
+              <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-gray-500">
+                Belum ada komunitas yang tersedia.
+              </div>
+            <?php else: ?>
+              <div class="flex flex-col gap-4">
+                <?php foreach ($discoverCommunities as $disc): ?>
+                  <?php $isJoined = !empty($disc['id']) && isset($joinedCommunityLookup[(string) $disc['id']]); ?>
+                  <div class="flex items-center justify-between rounded-[20px] border border-[#EAECF0] px-6 py-6">
+                    <div class="flex flex-1 items-center gap-6">
+                      <div class="flex h-20.5 w-20.5 items-center justify-center rounded-full bg-[#EEF4EC]">
+                        <img src="<?= htmlspecialchars($disc['image']) ?>" alt="" class="w-18.5 h-18.5 object-contain" />
+                      </div>
+                      <div class="max-w-107.5">
+                        <div class="flex items-center gap-2">
+                          <h3 class="text-[20px] font-semibold text-[#101828]"><?= htmlspecialchars($disc['title']) ?></h3>
+                          <span class="text-[#16B364]">✓</span>
+                        </div>
+                        <span class="mt-2 inline-flex rounded-full px-3 py-1 text-[13px] font-semibold <?= $disc['tagColor'] ?>">
+                          <?= htmlspecialchars($disc['tag']) ?>
+                        </span>
+                        <p class="mt-3 text-[13px] leading-8 text-[#475467]"><?= htmlspecialchars($disc['desc']) ?></p>
+                        <div class="mt-4 flex items-center gap-6 text-[14px] text-[#667085]">
+                          <div>📍 <?= htmlspecialchars($disc['loc']) ?></div>
+                          <span>•</span>
+                          <div>📅 <?= htmlspecialchars($disc['date']) ?></div>
+                        </div>
+                      </div>
                     </div>
-                    <div class="max-w-107.5">
-                      <div class="flex items-center gap-2">
-                        <h3 class="text-[20px] font-semibold text-[#101828]"><?= htmlspecialchars($disc['title']) ?></h3>
-                        <span class="text-[#16B364]">✓</span>
+                    <div class="mr-8 flex items-center gap-12">
+                      <div class="text-center">
+                        <span class="text-[25px] font-semibold text-[#101828]"><?= htmlspecialchars($disc['members']) ?></span>
+                        <p class="mt-2 text-[15px] text-[#667085]">Anggota</p>
                       </div>
-                      <span class="mt-2 inline-flex rounded-full px-3 py-1 text-[13px] font-semibold <?= $disc['tagColor'] ?>">
-                        <?= htmlspecialchars($disc['tag']) ?>
-                      </span>
-                      <p class="mt-3 text-[13px] leading-8 text-[#475467]"><?= htmlspecialchars($disc['desc']) ?></p>
-                      <div class="mt-4 flex items-center gap-6 text-[14px] text-[#667085]">
-                        <div>📍 <?= htmlspecialchars($disc['loc']) ?></div>
-                        <span>•</span>
-                        <div>📅 <?= htmlspecialchars($disc['date']) ?></div>
+                      <div class="text-center">
+                        <span class="text-[25px] font-semibold text-[#101828]"><?= htmlspecialchars($disc['posts']) ?></span>
+                        <p class="mt-2 text-[15px] text-[#667085]">Postingan</p>
                       </div>
+                      <button
+                        type="button"
+                        class="join-community-btn flex h-12 items-center rounded-xl border border-[#11773D] px-7 text-[15px] font-semibold text-[#11773D] transition hover:bg-[#11773D] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        data-community-id="<?= htmlspecialchars((string) ($disc['id'] ?? '')) ?>"
+                        data-joined="<?= $isJoined ? '1' : '0' ?>"
+                        <?= empty($disc['id'] ?? '') ? 'disabled' : '' ?>>
+                        <?= $isJoined ? 'Lihat Komunitas' : 'Bergabung' ?>
+                      </button>
                     </div>
                   </div>
-                  <div class="mr-8 flex items-center gap-12">
-                    <div class="text-center">
-                      <span class="text-[25px] font-semibold text-[#101828]"><?= htmlspecialchars($disc['members']) ?></span>
-                      <p class="mt-2 text-[15px] text-[#667085]">Anggota</p>
-                    </div>
-                    <div class="text-center">
-                      <span class="text-[25px] font-semibold text-[#101828]"><?= htmlspecialchars($disc['posts']) ?></span>
-                      <p class="mt-2 text-[15px] text-[#667085]">Postingan</p>
-                    </div>
-                    <a href="/dashboard/komunitas/detail" class="flex h-12 items-center rounded-xl border border-[#11773D] px-7 text-[15px] font-semibold text-[#11773D] transition hover:bg-[#11773D] hover:text-white">
-                      Bergabung
-                    </a>
-                  </div>
-                </div>
-              <?php endforeach; ?>
-            </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
           </div>
         </div>
       </div>
@@ -341,13 +334,17 @@ $suggestions = [
           <div class="pr-10">
             <p class="text-[16px] font-medium text-[#475467]">Komunitas Bergabung</p>
             <div class="mt-6 flex items-center gap-3">
-              <span class="text-[42px] font-semibold leading-none text-[#11773D]">5</span>
+              <span class="text-[42px] font-semibold leading-none text-[#11773D]">
+                <?= number_format((int) ($communitySummary['joined_count'] ?? 0), 0, ',', '.') ?>
+              </span>
             </div>
           </div>
           <div class="relative pl-10">
             <p class="text-[16px] font-medium text-[#475467]">Total Anggota</p>
             <div class="mt-6 flex items-center gap-3">
-              <span class="text-[42px] font-semibold leading-none text-[#11773D]">28.450</span>
+              <span class="text-[42px] font-semibold leading-none text-[#11773D]">
+                <?= number_format((int) ($communitySummary['total_members'] ?? 0), 0, ',', '.') ?>
+              </span>
             </div>
           </div>
         </div>
@@ -356,8 +353,9 @@ $suggestions = [
       <!-- Aktivitas Komunitas SVG Chart -->
       <div class="rounded-3xl border border-[#EAECF0] bg-white p-7 shadow-sm">
         <h3 class="text-[22px] font-semibold text-[#101828] mb-4">Aktivitas Komunitas</h3>
+        <?php $weeklyTotal = array_sum(array_column($weeklyChartData, 'value')); ?>
         <div class="mb-1 flex items-center gap-2">
-          <span class="text-[54px] font-semibold leading-none text-[#11773D]">320</span>
+          <span class="text-[54px] font-semibold leading-none text-[#11773D]"><?= number_format((int) $weeklyTotal, 0, ',', '.') ?></span>
           <span class="text-[24px] text-[#11773D]">🍃</span>
         </div>
         <p class="mb-8 text-[18px] font-medium text-[#667085]">Aktivitas Minggu Ini</p>
@@ -400,23 +398,75 @@ $suggestions = [
       <!-- Top Kontributor -->
       <div class="rounded-3xl p-6 bg-white shadow-sm">
         <h3 class="text-[24px] font-semibold text-[#101828] mb-5">Top Kontributor</h3>
-        <div class="flex flex-col gap-5">
-          <?php foreach ($contributors as $con): ?>
-            <div class="flex items-center justify-between py-2">
-              <div class="flex items-center gap-5">
-                <span class="font-bold text-[#16A34A]"><?= $con['rank'] ?></span>
-                <img src="<?= htmlspecialchars($con['avatar']) ?>" alt="" class="w-13 h-13 rounded-full object-cover" />
-                <div>
-                  <h4 class="text-[18px] font-semibold text-[#101828]"><?= htmlspecialchars($con['name']) ?></h4>
-                  <p class="text-[14px] text-[#667085]"><?= htmlspecialchars($con['badge']) ?></p>
+        <?php if (empty($contributors)): ?>
+          <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-gray-500">
+            Belum ada kontributor untuk ditampilkan.
+          </div>
+        <?php else: ?>
+          <div class="flex flex-col gap-5">
+            <?php foreach ($contributors as $con): ?>
+              <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-5">
+                  <span class="font-bold text-[#16A34A]"><?= (int) ($con['rank'] ?? 0) ?></span>
+                  <img src="<?= htmlspecialchars($con['avatar'] ?? '/assets/ava1.jpg') ?>" alt="" class="w-13 h-13 rounded-full object-cover" />
+                  <div>
+                    <h4 class="text-[18px] font-semibold text-[#101828]"><?= htmlspecialchars($con['name'] ?? 'Kontributor') ?></h4>
+                    <p class="text-[14px] text-[#667085]"><?= htmlspecialchars($con['badge'] ?? 'Eco Contributor') ?></p>
+                  </div>
                 </div>
+                <span class="text-[20px] font-semibold text-[#16A34A]"><?= htmlspecialchars((string) ($con['score'] ?? 0)) ?> 🍃</span>
               </div>
-              <span class="text-[20px] font-semibold text-[#16A34A]"><?= htmlspecialchars($con['score']) ?> 🍃</span>
-            </div>
-          <?php endforeach; ?>
-        </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="createCommunityModal" class="fixed inset-0 z-999 hidden items-center justify-center bg-black/40 p-6 backdrop-blur-sm">
+  <div class="w-full max-w-2xl rounded-[28px] bg-white p-8 shadow-2xl">
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-900">Buat Komunitas Baru</h2>
+        <p class="mt-1 text-sm text-gray-500">Mulai komunitas hijau yang siap membawa dampak positif.</p>
+      </div>
+      <button id="closeCreateCommunityModalBtn" type="button" class="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-xl text-gray-600 hover:bg-gray-100">×</button>
+    </div>
+
+    <form id="createCommunityForm" class="space-y-5">
+      <div>
+        <label class="mb-2 block text-sm font-semibold text-gray-700">Nama Komunitas</label>
+        <input name="name" type="text" required class="h-12 w-full rounded-xl border border-gray-200 px-4 outline-none focus:border-[#11773D]" placeholder="Contoh: Hijau Kota Baru" />
+      </div>
+
+      <div>
+        <label class="mb-2 block text-sm font-semibold text-gray-700">Deskripsi</label>
+        <textarea name="description" rows="3" class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#11773D]" placeholder="Jelaskan visi komunitasmu"></textarea>
+      </div>
+
+      <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div>
+          <label class="mb-2 block text-sm font-semibold text-gray-700">Kota</label>
+          <input name="city" type="text" class="h-12 w-full rounded-xl border border-gray-200 px-4 outline-none focus:border-[#11773D]" placeholder="Contoh: Malang" />
+        </div>
+
+        <div>
+          <label class="mb-2 block text-sm font-semibold text-gray-700">Gambar / URL</label>
+          <input name="image" type="text" class="h-12 w-full rounded-xl border border-gray-200 px-4 outline-none focus:border-[#11773D]" placeholder="https://... /assets/..." />
+        </div>
+      </div>
+
+      <div>
+        <label class="mb-2 block text-sm font-semibold text-gray-700">Tag (opsional)</label>
+        <input name="tags" type="text" class="h-12 w-full rounded-xl border border-gray-200 px-4 outline-none focus:border-[#11773D]" placeholder="Lingkungan, Daur Ulang, Kota" />
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button id="cancelCreateCommunityBtn" type="button" class="rounded-xl border border-gray-200 px-5 py-3 font-semibold text-gray-600 hover:bg-gray-100">Batal</button>
+        <button type="submit" class="rounded-xl bg-[#11773D] px-6 py-3 font-semibold text-white hover:bg-[#0E6634]">Simpan Komunitas</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -446,6 +496,103 @@ $suggestions = [
             content.classList.remove("flex");
           }
         });
+      });
+    });
+
+    const createModal = document.getElementById("createCommunityModal");
+    const openCreateBtn = document.getElementById("openCreateCommunityModalBtn");
+    const openCreateBtnSecondary = document.getElementById("openCreateCommunityModalBtnSecondary");
+    const closeCreateBtn = document.getElementById("closeCreateCommunityModalBtn");
+    const cancelCreateBtn = document.getElementById("cancelCreateCommunityBtn");
+
+    const openCreateModal = () => {
+      if (createModal) {
+        createModal.classList.remove("hidden")
+        createModal.classList.add("flex")
+      };
+    };
+
+    const closeCreateModal = () => {
+      if (createModal) {
+        createModal.classList.add("hidden");
+        createModal.classList.remove("flex");
+      }
+    };
+
+    if (openCreateBtn) openCreateBtn.addEventListener("click", openCreateModal);
+    if (openCreateBtnSecondary) openCreateBtnSecondary.addEventListener("click", openCreateModal);
+    if (closeCreateBtn) closeCreateBtn.addEventListener("click", closeCreateModal);
+    if (cancelCreateBtn) cancelCreateBtn.addEventListener("click", closeCreateModal);
+
+    createModal?.addEventListener("click", function(event) {
+      if (event.target === createModal) closeCreateModal();
+    });
+
+    const createForm = document.getElementById("createCommunityForm");
+    if (createForm) {
+      createForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(this);
+        const payload = new URLSearchParams();
+
+        for (const [key, value] of formData.entries()) {
+          payload.append(key, value);
+        }
+
+        const response = await fetch("/dashboard/actions/community/create_community.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          body: payload.toString(),
+          credentials: "same-origin"
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert(result.message || "Komunitas berhasil dibuat.");
+          window.location.reload();
+          return;
+        }
+
+        alert(result.message || "Gagal membuat komunitas.");
+      });
+    }
+
+    document.querySelectorAll(".join-community-btn").forEach(function(button) {
+      button.addEventListener("click", async function() {
+        const communityId = this.dataset.communityId;
+        if (!communityId) {
+          alert("Komunitas belum tersedia untuk bergabung.");
+          return;
+        }
+
+        if (this.dataset.joined === "1") {
+          window.location.href = "/dashboard/komunitas/detail?id=" + communityId;
+          return;
+        }
+
+        const response = await fetch("/dashboard/actions/community/join_community.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          body: new URLSearchParams({
+            community_id: communityId
+          }).toString(),
+          credentials: "same-origin"
+        });
+
+        const result = await response.json();
+        alert(result.message || "Proses bergabung selesai.");
+
+        if (result.success) {
+          window.location.reload();
+        }
       });
     });
   });
