@@ -331,7 +331,9 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
       </div>
 
       <!-- Right Form -->
-      <form id="activityForm" method="post" action="/dashboard/services/aktivitas/create_activity.php" class="col-span-8 overflow-y-auto p-8 space-y-6">
+      <form id="activityForm"
+        class="col-span-8 overflow-y-auto p-8 space-y-6">
+        <input class="hidden" type="text" name="user_id" value="<?php echo $_SESSION['user']['id'] ?>" id="">
         <div>
           <h3 id="selectedCategoryTitle" class="text-2xl font-bold"><?= htmlspecialchars($categories[0]['name'] ?? 'Kategori') ?></h3>
           <p id="selectedCategoryDesc" class="mt-2 leading-7 text-gray-500"><?= htmlspecialchars($categories[0]['description'] ?? '') ?></p>
@@ -429,36 +431,36 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
       });
     });
 
-    // if (form) {
-    //   form.addEventListener("submit", async function(e) {
-    //     e.preventDefault();
-    //     submitBtn.disabled = true;
-    //     submitBtn.textContent = "Menyimpan...";
+    if (form) {
+      form.addEventListener("submit", async function(e) {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Menyimpan...";
 
-    //     const formData = new FormData(this);
+        const formData = new FormData(this);
+        try {
+          const res = await fetch("http://localhost:9999/dashboard/services/aktivitas/create_activity.php", {
+            method: "POST",
+            body: formData,
+          });
 
-    //     try {
-    //       const res = await fetch("http://localhost:9999/dashboard/services/aktivitas/activity.php", {
-    //         method: "POST",
-    //         body: formData
-    //       });
-    //       const data = await res.json();
+          const data = await res.json();
 
-    //       if (data.status === "success") {
-    //         alert("Aktivitas berhasil ditambahkan");
-    //         window.location.reload();
-    //       } else {
-    //         alert(data.message || "Gagal menyimpan aktivitas.");
-    //       }
-    //     } catch (err) {
-    //       console.error(err);
-    //       alert("Terjadi kesalahan sistem.");
-    //     } finally {
-    //       submitBtn.disabled = false;
-    //       submitBtn.textContent = "Simpan Aktivitas";
-    //     }
-    //   });
-    // }
+          if (data.status === "success") {
+            alert("Aktivitas berhasil ditambahkan");
+            window.location.reload();
+          } else {
+            alert(data.message || "Gagal menyimpan aktivitas.");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Terjadi kesalahan sistem.");
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Simpan Aktivitas";
+        }
+      });
+    }
   });
 </script>
 
