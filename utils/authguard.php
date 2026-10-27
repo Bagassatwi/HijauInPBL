@@ -1,14 +1,12 @@
 <?php
 session_start();
 include_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
-if (trim($_COOKIE['remember_me']) == '') {
-  header('Location: login.php');
+if (trim($_COOKIE['remember_me']) == '' || !isset($_COOKIE['remember_me'])) {
+  header('Location: /login.php');
   exit;
 }
 if (isset($_SESSION['user'])) {
   $user = $_SESSION['user'];
-  header('Location: dashboard/index.php');
-  exit;
 } else {
   $stmt = $pdo->prepare('select pp.* from auth.refresh_tokens art join public.profiles pp on pp.id = art.user_id::uuid where art.token = :token');
   $stmt->execute(
