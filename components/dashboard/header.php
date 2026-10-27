@@ -77,7 +77,7 @@ $headerConfig = [
 $currentConfig = $headerConfig[$pathname] ?? $headerConfig['/admin'];
 ?>
 
-<header class="rounded-3xl relative flex flex-col lg:flex-row lg:items-center justify-between gap-4 z-0 p-8 pb-12">
+<header class="rounded-3xl relative flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-8 pb-12 z-999">
   <div class="lg:w-1/2 z-10 w-full">
     <h1 class="mb-2 text-3xl font-bold"><?= htmlspecialchars($currentConfig['title']) ?></h1>
 
