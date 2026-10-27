@@ -1,6 +1,9 @@
 <?php
 include_once $_SERVER['DOCUMENT_ROOT'] . "/utils/connection.php";
-include_once $_SERVER['DOCUMENT_ROOT'] . "/utils/authguard.php";
+if (isset($_COOKIE['remember_me'])) {
+    header('Location: /dashboard/index.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
