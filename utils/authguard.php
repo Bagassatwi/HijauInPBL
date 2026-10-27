@@ -7,6 +7,8 @@ if (trim($_COOKIE['remember_me']) == '') {
 }
 if (isset($_SESSION['user'])) {
   $user = $_SESSION['user'];
+  header('Location: dashboard/index.php');
+  exit;
 } else {
   $stmt = $pdo->prepare('select pp.* from auth.refresh_tokens art join public.profiles pp on pp.id = art.user_id::uuid where art.token = :token');
   $stmt->execute(
