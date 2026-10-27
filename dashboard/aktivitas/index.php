@@ -331,7 +331,9 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
       </div>
 
       <!-- Right Form -->
-      <form id="activityForm" class="col-span-8 overflow-y-auto p-8 space-y-6">
+      <form id="activityForm"
+        class="col-span-8 overflow-y-auto p-8 space-y-6">
+        <input class="hidden" type="text" name="user_id" value="<?php echo $_SESSION['user']['id'] ?>" id="">
         <div>
           <h3 id="selectedCategoryTitle" class="text-2xl font-bold"><?= htmlspecialchars($categories[0]['name'] ?? 'Kategori') ?></h3>
           <p id="selectedCategoryDesc" class="mt-2 leading-7 text-gray-500"><?= htmlspecialchars($categories[0]['description'] ?? '') ?></p>
@@ -436,12 +438,12 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
         submitBtn.textContent = "Menyimpan...";
 
         const formData = new FormData(this);
-
         try {
-          const res = await fetch("/actions/create_activity.php", {
+          const res = await fetch("/dashboard/services/aktivitas/create_activity.php", {
             method: "POST",
-            body: formData
+            body: formData,
           });
+
           const data = await res.json();
 
           if (data.status === "success") {
