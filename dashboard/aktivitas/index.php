@@ -439,7 +439,7 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
 
         const formData = new FormData(this);
         try {
-          const res = await fetch("http://localhost:9999/dashboard/services/aktivitas/create_activity.php", {
+          const res = await fetch("/dashboard/services/aktivitas/create_activity.php", {
             method: "POST",
             body: formData,
           });
