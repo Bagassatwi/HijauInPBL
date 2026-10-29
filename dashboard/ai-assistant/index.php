@@ -29,148 +29,6 @@ if (empty($messages)) {
 }
 
 $firstName = explode(' ', trim($_SESSION['user']['full_name'] ?? 'Budi'))[0];
-
-function getRecentEcoActions(PDO $pdo, string $userId): array {
-  if (empty($userId)) {
-    return [];
-  }
-
-  $stmt = $pdo->prepare("
-    SELECT e.title, e.description, e.point, e.activity_date, e.co2_saved, e.water_saved, e.energy_saved,
-           c.name AS category_name
-    FROM public.eco_actions e
-    LEFT JOIN public.categories c ON c.id = e.category_id
-    WHERE e.user_id = :user_id
-    ORDER BY e.activity_date DESC NULLS LAST, e.created_at DESC
-    LIMIT 10
-  ");
-
-  $stmt->execute([':user_id' => $userId]);
-
-  return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-}
-
-function normalizeRecommendationArray(array $recommendations): array {
-  $normalized = [];
-
-  foreach (($recommendations ?? []) as $item) {
-    if (!is_array($item)) {
-      continue;
-    }
-
-    $title = isset($item['title']) ? trim((string)$item['title']) : '';
-    $description = isset($item['description']) ? trim((string)$item['description']) : '';
-    $points = isset($item['points']) ? (int)$item['points'] : 20;
-
-    if ($title === '' || $description === '') {
-      continue;
-    }
-
-    $normalized[] = [
-      'title' => substr($title, 0, 60),
-      'description' => substr($description, 0, 160),
-      'points' => max(10, min(40, $points))
-    ];
-  }
-
-  return array_slice($normalized, 0, 3);
-}
-
-function getRecommendationFallback(): array {
-  return [
-    [
-      'title' => 'Bawa tumbler setiap hari',
-      'description' => 'Kurangi penggunaan botol plastik sekali pakai dan jaga kebiasaan minum yang lebih ramah lingkungan.',
-      'points' => 20
-    ],
-    [
-      'title' => 'Hemat listrik di rumah',
-      'description' => 'Matikan perangkat yang tidak dipakai dan pilih peralatan yang lebih efisien untuk mengurangi konsumsi energi.',
-      'points' => 25
-    ],
-    [
-      'title' => 'Pilihan transportasi yang lebih hijau',
-      'description' => 'Coba naik transportasi umum, bersepeda, atau jalan kaki untuk menurunkan emisi karbon harian.',
-      'points' => 30
-    ]
-  ];
-}
-
-function getGeminiRecommendations(PDO $pdo, string $userId): array {
-  $recentActions = getRecentEcoActions($pdo, $userId);
-
-  if (empty($recentActions)) {
-    return getRecommendationFallback();
-  }
-
-  $apiKey = getenv('GEMINI_API_KEY');
-  if (!$apiKey) {
-    return getRecommendationFallback();
-  }
-
-  $prompt = "Berikut 10 aktivitas paling terbaru pengguna di aplikasi HijauIn dalam format JSON:\n" . json_encode(array_map(function ($action) {
-    return [
-      'title' => $action['title'] ?? '',
-      'description' => $action['description'] ?? '',
-      'category' => $action['category_name'] ?? 'Umum',
-      'point' => (int)($action['point'] ?? 0),
-      'activity_date' => $action['activity_date'] ?? null,
-      'co2_saved' => (float)($action['co2_saved'] ?? 0),
-      'water_saved' => (float)($action['water_saved'] ?? 0),
-      'energy_saved' => (float)($action['energy_saved'] ?? 0),
-    ];
-  }, $recentActions), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-  $prompt .= "\n\nBerdasarkan aktivitas di atas, buat 3 rekomendasi yang paling relevan, praktis, dan selaras dengan kebiasaan hijau pengguna saat ini.\nAturan: respons harus berupa JSON valid dengan format {\"recommendations\":[{\"title\":\"...\",\"description\":\"...\",\"points\":20}, ...]} dan HARUS tepat 3 item.\nPastikan title singkat, description jelas, dan points antara 10 sampai 40. Jangan sertakan teks lain di luar JSON.";
-
-  $payload = [
-    'contents' => [[
-      'role' => 'user',
-      'parts' => [['text' => $prompt]]
-    ]],
-    'systemInstruction' => ['parts' => [['text' => 'Kamu adalah asisten green coach. Hanya balas dengan JSON valid tanpa markdown.']]]
-  ];
-
-  try {
-    $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' . getenv("MODEL") . ':generateContent?key=' . $apiKey;
-    $ch = curl_init($apiUrl);
-    curl_setopt_array($ch, [
-      CURLOPT_RETURNTRANSFER => true,
-      CURLOPT_POST => true,
-      CURLOPT_POSTFIELDS => json_encode($payload),
-      CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-      CURLOPT_CAINFO => $_SERVER['DOCUMENT_ROOT'] . '/cacert-2026-09-25.pem',
-    ]);
-
-    $response = curl_exec($ch);
-    file_put_contents('./debug.log', 'nigger' . $response, FILE_APPEND);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    if ($httpCode >= 400 || !$response) {
-      throw new Exception('Gemini recommendation error');
-    }
-
-    $responseData = json_decode($response, true);
-    $aiText = $responseData['candidates'][0]['content']['parts'][0]['text'] ?? '';
-    $cleanText = preg_replace('/^```(?:json)?\s*/i', '', trim($aiText));
-    $cleanText = preg_replace('/\s*```\s*$/', '', $cleanText);
-
-    $decoded = json_decode($cleanText, true);
-    $recommendations = $decoded['recommendations'] ?? [];
-
-    $normalized = normalizeRecommendationArray($recommendations);
-    if (!empty($normalized)) {
-      return $normalized;
-    }
-
-    return getRecommendationFallback();
-  } catch (Throwable $e) {
-    error_log('Failed to generate recommendations: ' . $e->getMessage());
-    return getRecommendationFallback();
-  }
-}
-
-$recommendations = getGeminiRecommendations($pdo, $userId ?? '');
 ?>
 
 <!-- Marked JS for markdown rendering -->
@@ -343,27 +201,22 @@ $recommendations = getGeminiRecommendations($pdo, $userId ?? '');
 
       <!-- Recommendations List -->
       <div class="flex flex-1 flex-col rounded-3xl border border-gray-100 bg-white p-6">
-        <div class="mb-6 flex items-center justify-between">
+        <div class="mb-6 flex items-center justify-between gap-3">
           <h3 class="text-[22px] font-semibold text-[#0B0F1F]">Rekomendasi Untukmu</h3>
-          <button type="button" class="text-[16px] font-semibold text-[#11773D]">Lihat Semua ➔</button>
+          <button id="generateRecommendationBtn" type="button" class="rounded-xl border border-[#11773D] bg-[#11773D] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#0D6433]">
+            Get a recommendation
+          </button>
         </div>
 
-        <div class="flex flex-col divide-y divide-[#F2F4F7]">
-          <?php foreach ($recommendations as $recommendation): ?>
-            <div class="flex items-center justify-between py-4">
-              <div class="flex items-center gap-4">
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F8FAF8]">
-                  <img src="/assets/ai/rekomendasi.png" class="h-6 w-6 object-contain" alt="" />
-                </div>
-                <div>
-                  <h4 class="text-[16px] font-semibold text-[#0B0F1F]"><?= htmlspecialchars($recommendation['title']) ?></h4>
-                  <p class="text-[13px] text-[#667085]"><?= htmlspecialchars($recommendation['description']) ?></p>
-                </div>
-              </div>
-              <span class="text-[16px] font-bold text-[#11773D]">+<?= (int)($recommendation['points'] ?? 20) ?></span>
-            </div>
-          <?php endforeach; ?>
+        <div id="recommendationList" class="flex flex-col divide-y divide-[#F2F4F7]">
+          <div id="recommendationEmptyState" class="py-6 text-sm text-[#667085]">
+            Belum ada rekomendasi. Klik tombol untuk mendapatkan saran yang sesuai dengan aktivitasmu.
+          </div>
         </div>
+
+        <button id="refreshRecommendationBtn" type="button" class="mt-4 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 py-2 text-sm font-semibold text-[#11773D] hover:bg-[#F7FAF7]">
+          Get another one
+        </button>
       </div>
     </div>
   </div>
@@ -437,6 +290,95 @@ $recommendations = getGeminiRecommendations($pdo, $userId ?? '');
     const heroSendBtn = document.getElementById("heroSendBtn");
     const messageContainer = document.getElementById("messageContainer");
     const typingIndicator = document.getElementById("typingIndicator");
+
+    const recommendationList = document.getElementById("recommendationList");
+    const recommendationEmptyState = document.getElementById("recommendationEmptyState");
+    const generateRecommendationBtn = document.getElementById("generateRecommendationBtn");
+    const refreshRecommendationBtn = document.getElementById("refreshRecommendationBtn");
+    const STORAGE_KEY = "hijauin_recommendations";
+
+    function renderRecommendations(items) {
+      recommendationList.innerHTML = "";
+
+      if (!items || items.length === 0) {
+        recommendationList.innerHTML = `
+          <div id="recommendationEmptyState" class="py-6 text-sm text-[#667085]">
+            Belum ada rekomendasi. Klik tombol untuk mendapatkan saran yang sesuai dengan aktivitasmu.
+          </div>
+        `;
+        return;
+      }
+
+      items.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between py-4";
+        row.innerHTML = `
+          <div class="flex items-center gap-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F8FAF8]">
+              <img src="/assets/ai/rekomendasi.png" class="h-6 w-6 object-contain" alt="" />
+            </div>
+            <div>
+              <h4 class="text-[16px] font-semibold text-[#0B0F1F]">${escapeHtml(item.title || "Rekomendasi")}</h4>
+              <p class="text-[13px] text-[#667085]">${escapeHtml(item.description || "")}</p>
+            </div>
+          </div>
+          <span class="text-[16px] font-bold text-[#11773D]">+${Number(item.points || 20)}</span>
+        `;
+        recommendationList.appendChild(row);
+      });
+    }
+
+    function loadRecommendationsFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          renderRecommendations([]);
+          return;
+        }
+
+        const parsed = JSON.parse(raw);
+        renderRecommendations(Array.isArray(parsed) ? parsed : []);
+      } catch (error) {
+        console.error("Failed to parse recommendations from localStorage", error);
+        renderRecommendations([]);
+      }
+    }
+
+    async function fetchRecommendations() {
+      try {
+        generateRecommendationBtn.disabled = true;
+        refreshRecommendationBtn.disabled = true;
+        generateRecommendationBtn.textContent = "Mendapatkan...";
+        refreshRecommendationBtn.textContent = "Mendapatkan...";
+
+        const res = await fetch("/dashboard/actions/recommendations.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({})
+        });
+
+        const data = await res.json();
+        const recommendations = data.recommendations || [];
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(recommendations));
+        renderRecommendations(recommendations);
+      } catch (error) {
+        console.error(error);
+        renderRecommendations([]);
+      } finally {
+        generateRecommendationBtn.disabled = false;
+        refreshRecommendationBtn.disabled = false;
+        generateRecommendationBtn.textContent = "Get a recommendation";
+        refreshRecommendationBtn.textContent = "Get another one";
+      }
+    }
+
+    generateRecommendationBtn.addEventListener("click", fetchRecommendations);
+    refreshRecommendationBtn.addEventListener("click", fetchRecommendations);
+
+    loadRecommendationsFromStorage();
 
     const scanModal = document.getElementById("scanModal");
     const openScanModalBtn = document.getElementById("openScanModalBtn");
