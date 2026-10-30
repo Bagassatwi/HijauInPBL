@@ -130,7 +130,7 @@ $firstName = explode(' ', trim($_SESSION['user']['full_name'] ?? 'Budi'))[0];
   <!-- Main Section (Chat & Sidebar) -->
   <div id="chatSection" class="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
     <!-- Chat Interface -->
-    <div class="flex h-[800px] flex-col rounded-3xl border-2 border-gray-100 bg-white lg:col-span-2">
+    <div class="flex h-200 flex-col rounded-3xl border-2 border-gray-100 bg-white lg:col-span-2">
       <div class="flex items-center justify-between rounded-t-3xl border-b border-gray-100 bg-white px-6 py-4">
         <h3 class="text-lg font-bold text-gray-700">Chat dengan Eco AI</h3>
         <button type="button" class="flex items-center gap-2 text-base font-semibold text-gray-600 hover:text-[#11773D]">
@@ -185,9 +185,6 @@ $firstName = explode(' ', trim($_SESSION['user']['full_name'] ?? 'Budi'))[0];
     <div class="flex flex-col gap-6 lg:col-span-1">
       <!-- Scan Sampah Widget with Red Warning Above -->
       <div class="rounded-3xl border border-gray-100 bg-white p-6">
-        <!-- Red text warning above the feature -->
-        <p class="text-red-500 text-sm font-semibold mb-3">Fitur ini sedang dalam tahap pengembangan (Coming Soon)</p>
-
         <h3 class="mb-4 text-lg font-bold text-gray-800">Scan Sampah dengan AI</h3>
         <div class="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-[#F8F9F5] p-6 text-center">
           <div class="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#EEF8F0]">
@@ -196,7 +193,7 @@ $firstName = explode(' ', trim($_SESSION['user']['full_name'] ?? 'Budi'))[0];
           <p class="mb-6 text-base font-medium leading-relaxed text-gray-600">
             Upload foto sampah untuk mengetahui jenisnya dan cara pengelolaan yang tepat.
           </p>
-          <button type="button" disabled class="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-400 py-3 text-base font-bold text-white cursor-not-allowed">
+          <button id="openScanModalBtn" type="button" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#11773D] py-3 text-base font-bold text-white hover:bg-[#0D6433]">
             📷 Mulai Scan
           </button>
         </div>
@@ -204,38 +201,22 @@ $firstName = explode(' ', trim($_SESSION['user']['full_name'] ?? 'Budi'))[0];
 
       <!-- Recommendations List -->
       <div class="flex flex-1 flex-col rounded-3xl border border-gray-100 bg-white p-6">
-        <div class="mb-6 flex items-center justify-between">
+        <div class="mb-6 flex items-center justify-between gap-3">
           <h3 class="text-[22px] font-semibold text-[#0B0F1F]">Rekomendasi Untukmu</h3>
-          <button type="button" class="text-[16px] font-semibold text-[#11773D]">Lihat Semua ➔</button>
+          <button id="generateRecommendationBtn" type="button" class="rounded-xl border border-[#11773D] bg-[#11773D] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#0D6433]">
+            Get a recommendation
+          </button>
         </div>
 
-        <div class="flex flex-col divide-y divide-[#F2F4F7]">
-          <div class="flex items-center justify-between py-4">
-            <div class="flex items-center gap-4">
-              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F8FAF8]">
-                <img src="/assets/tumbler.png" class="h-6 w-6 object-contain" alt="" />
-              </div>
-              <div>
-                <h4 class="text-[16px] font-semibold text-[#0B0F1F]">Bawa Tumbler Setiap Hari</h4>
-                <p class="text-[13px] text-[#667085]">Kurangi botol plastik sekali pakai.</p>
-              </div>
-            </div>
-            <span class="text-[16px] font-bold text-[#11773D]">+20</span>
-          </div>
-
-          <div class="flex items-center justify-between py-4">
-            <div class="flex items-center gap-4">
-              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F8FAF8]">
-                <img src="/assets/bus.png" class="h-6 w-6 object-contain" alt="" />
-              </div>
-              <div>
-                <h4 class="text-[16px] font-semibold text-[#0B0F1F]">Naik Transportasi Umum</h4>
-                <p class="text-[13px] text-[#667085]">Kurangi emisi karbon kendaraan.</p>
-              </div>
-            </div>
-            <span class="text-[16px] font-bold text-[#11773D]">+30</span>
+        <div id="recommendationList" class="flex flex-col divide-y divide-[#F2F4F7]">
+          <div id="recommendationEmptyState" class="py-6 text-sm text-[#667085]">
+            Belum ada rekomendasi. Klik tombol untuk mendapatkan saran yang sesuai dengan aktivitasmu.
           </div>
         </div>
+
+        <button id="refreshRecommendationBtn" type="button" class="mt-4 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 py-2 text-sm font-semibold text-[#11773D] hover:bg-[#F7FAF7]">
+          Get another one
+        </button>
       </div>
     </div>
   </div>
@@ -262,6 +243,45 @@ $firstName = explode(' ', trim($_SESSION['user']['full_name'] ?? 'Budi'))[0];
   </div>
 </div>
 
+<div id="scanModal" class="fixed inset-0 z-999 hidden items-center justify-center bg-black/40 p-4 ">
+  <div class="w-full max-w-3xl rounded-3xl bg-white p-6 shadow-2xl max-h-[75dvh]">
+    <div class="mb-5 flex items-center justify-between ">
+      <h3 class="text-2xl font-bold text-[#0B0F1F]">Scan Sampah dengan AI</h3>
+      <button id="closeScanModalBtn" type="button" class="rounded-full border border-gray-200 px-3 py-1 text-lg text-gray-500 hover:text-[#11773D]">
+        ✕
+      </button>
+    </div>
+
+    <div class="grid gap-5 md:grid-cols-2 h-auto">
+      <div class="rounded-2xl border border-[#EAECF0] bg-[#F8F9F5] p-4">
+        <div id="scanPreviewWrap" class="hidden overflow-hidden rounded-2xl border border-[#E6F4EB] bg-white">
+          <img id="scanPreview" src="" alt="Preview sampah" class="h-80 w-full object-cover" />
+        </div>
+        <div id="scanEmptyState" class="flex h-80 items-center justify-center rounded-2xl border-2 border-dashed border-[#D0D5DD] text-center text-sm text-[#667085]">
+          Belum ada foto. Pilih gambar sampah untuk mulai analisis.
+        </div>
+      </div>
+
+      <div class="space-y-4 rounded-2xl border border-[#EAECF0] bg-white p-4">
+        <div>
+          <label for="scanImageInput" class="mb-2 block text-sm font-semibold text-[#344054]">Pilih foto sampah</label>
+          <input id="scanImageInput" type="file" accept="image/*" class="block w-full rounded-xl border border-[#D0D5DD] bg-white px-3 py-2 text-sm text-[#344054] file:mr-3 file:rounded-md file:border-0 file:bg-[#11773D] file:px-3 file:py-2 file:text-white" />
+        </div>
+
+        <button id="scanAnalyzeBtn" type="button" class="w-full rounded-xl bg-[#11773D] px-4 py-3 text-base font-semibold text-white hover:bg-[#0D6433] disabled:cursor-not-allowed disabled:bg-gray-400">
+          Analisis Sampah
+        </button>
+
+        <div id="scanResultBox" class="hidden rounded-2xl border border-[#E6F4EB] bg-[#F5FBF7] p-4 overflow-y-scroll max-h-[25dvh]">
+          <h4 class="mb-2 text-base font-bold text-[#0B0F1F]">Hasil analisis AI</h4>
+          <p id="scanResultText" class="text-sm leading-7 text-[#344054]">
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   document.addEventListener("DOMContentLoaded", function() {
     const chatInput = document.getElementById("chatInput");
@@ -270,6 +290,180 @@ $firstName = explode(' ', trim($_SESSION['user']['full_name'] ?? 'Budi'))[0];
     const heroSendBtn = document.getElementById("heroSendBtn");
     const messageContainer = document.getElementById("messageContainer");
     const typingIndicator = document.getElementById("typingIndicator");
+
+    const recommendationList = document.getElementById("recommendationList");
+    const recommendationEmptyState = document.getElementById("recommendationEmptyState");
+    const generateRecommendationBtn = document.getElementById("generateRecommendationBtn");
+    const refreshRecommendationBtn = document.getElementById("refreshRecommendationBtn");
+    const STORAGE_KEY = "hijauin_recommendations";
+
+    function renderRecommendations(items) {
+      recommendationList.innerHTML = "";
+
+      if (!items || items.length === 0) {
+        recommendationList.innerHTML = `
+          <div id="recommendationEmptyState" class="py-6 text-sm text-[#667085]">
+            Belum ada rekomendasi. Klik tombol untuk mendapatkan saran yang sesuai dengan aktivitasmu.
+          </div>
+        `;
+        return;
+      }
+
+      items.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between py-4";
+        row.innerHTML = `
+          <div class="flex items-center gap-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F8FAF8]">
+              <img src="/assets/ai/rekomendasi.png" class="h-6 w-6 object-contain" alt="" />
+            </div>
+            <div>
+              <h4 class="text-[16px] font-semibold text-[#0B0F1F]">${escapeHtml(item.title || "Rekomendasi")}</h4>
+              <p class="text-[13px] text-[#667085]">${escapeHtml(item.description || "")}</p>
+            </div>
+          </div>
+          <span class="text-[16px] font-bold text-[#11773D]">+${Number(item.points || 20)}</span>
+        `;
+        recommendationList.appendChild(row);
+      });
+    }
+
+    function loadRecommendationsFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          renderRecommendations([]);
+          return;
+        }
+
+        const parsed = JSON.parse(raw);
+        renderRecommendations(Array.isArray(parsed) ? parsed : []);
+      } catch (error) {
+        console.error("Failed to parse recommendations from localStorage", error);
+        renderRecommendations([]);
+      }
+    }
+
+    async function fetchRecommendations() {
+      try {
+        generateRecommendationBtn.disabled = true;
+        refreshRecommendationBtn.disabled = true;
+        generateRecommendationBtn.textContent = "Mendapatkan...";
+        refreshRecommendationBtn.textContent = "Mendapatkan...";
+
+        const res = await fetch("/dashboard/actions/recommendations.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({})
+        });
+
+        const data = await res.json();
+        const recommendations = data.recommendations || [];
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(recommendations));
+        renderRecommendations(recommendations);
+      } catch (error) {
+        console.error(error);
+        renderRecommendations([]);
+      } finally {
+        generateRecommendationBtn.disabled = false;
+        refreshRecommendationBtn.disabled = false;
+        generateRecommendationBtn.textContent = "Get a recommendation";
+        refreshRecommendationBtn.textContent = "Get another one";
+      }
+    }
+
+    generateRecommendationBtn.addEventListener("click", fetchRecommendations);
+    refreshRecommendationBtn.addEventListener("click", fetchRecommendations);
+
+    loadRecommendationsFromStorage();
+
+    const scanModal = document.getElementById("scanModal");
+    const openScanModalBtn = document.getElementById("openScanModalBtn");
+    const closeScanModalBtn = document.getElementById("closeScanModalBtn");
+    const scanImageInput = document.getElementById("scanImageInput");
+    const scanAnalyzeBtn = document.getElementById("scanAnalyzeBtn");
+    const scanPreview = document.getElementById("scanPreview");
+    const scanPreviewWrap = document.getElementById("scanPreviewWrap");
+    const scanEmptyState = document.getElementById("scanEmptyState");
+    const scanResultBox = document.getElementById("scanResultBox");
+    const scanResultText = document.getElementById("scanResultText");
+
+    function openScanModal() {
+      scanModal.classList.remove("hidden");
+      scanModal.classList.add("flex");
+    }
+
+    function closeScanModal() {
+      scanModal.classList.add("hidden");
+      scanModal.classList.remove("flex");
+    }
+
+    openScanModalBtn.addEventListener("click", openScanModal);
+    closeScanModalBtn.addEventListener("click", closeScanModal);
+    scanModal.addEventListener("click", function(event) {
+      if (event.target === scanModal) {
+        closeScanModal();
+      }
+    });
+
+    scanImageInput.addEventListener("change", function(event) {
+      const file = event.target.files[0];
+      scanResultBox.classList.add("hidden");
+
+      if (!file) {
+        scanPreviewWrap.classList.add("hidden");
+        scanEmptyState.classList.remove("hidden");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        scanPreview.src = e.target.result;
+        scanPreviewWrap.classList.remove("hidden");
+        scanEmptyState.classList.add("hidden");
+      };
+      reader.readAsDataURL(file);
+    });
+
+    scanAnalyzeBtn.addEventListener("click", async function() {
+      const file = scanImageInput.files[0];
+      if (!file) {
+        alert("Pilih foto sampah terlebih dahulu");
+        return;
+      }
+
+      scanAnalyzeBtn.disabled = true;
+      scanAnalyzeBtn.textContent = "Menganalisis...";
+      scanResultBox.classList.add("hidden");
+
+      const formData = new FormData();
+      formData.append("image", file);
+
+      try {
+        const response = await fetch("/dashboard/actions/scan-sampah.php", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.status !== "success") {
+          throw new Error(data.message || "Gagal menganalisis foto");
+        }
+
+        scanResultText.textContent = data.response;
+        scanResultBox.classList.remove("hidden");
+      } catch (error) {
+        scanResultText.textContent = error.message || "Terjadi kesalahan saat menganalisis foto.";
+        scanResultBox.classList.remove("hidden");
+      } finally {
+        scanAnalyzeBtn.disabled = false;
+        scanAnalyzeBtn.textContent = "Analisis Sampah";
+      }
+    });
 
     // Render initial markdown responses
     document.querySelectorAll('.markdown-body').forEach(el => {
@@ -299,7 +493,7 @@ $firstName = explode(' ', trim($_SESSION['user']['full_name'] ?? 'Budi'))[0];
       typingIndicator.classList.remove("hidden");
 
       try {
-        const res = await fetch("http://localhost:9999/dashboard/actions/ai-action.php", {
+        const res = await fetch("/dashboard/actions/ai-action.php", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
