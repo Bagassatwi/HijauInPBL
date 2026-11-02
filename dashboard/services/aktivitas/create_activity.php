@@ -3,6 +3,15 @@ header('Content-Type: application/json');
 
 include_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Method not allowed.'
+    ]);
+    exit;
+}
+
 $payload = $_POST;
 
 if (empty($payload['user_id']) || empty($payload['category_id']) || empty(trim((string) ($payload['title'] ?? '')))) {
@@ -14,17 +23,92 @@ if (empty($payload['user_id']) || empty($payload['category_id']) || empty(trim((
     exit;
 }
 
+$point = (int)($payload['point'] ?? 0);
+if ($point <= 0 && !empty($payload['category_id'])) {
+    $categoryStmt = $pdo->prepare('SELECT point FROM public.categories WHERE id = :id LIMIT 1');
+    $categoryStmt->execute([':id' => $payload['category_id']]);
+    $category = $categoryStmt->fetch();
+    if ($category && isset($category['point'])) {
+        $point = (int)$category['point'];
+    }
+}
+
+$photoUrl = null;
+if (isset($_FILES['proof_photo']) && !empty($_FILES['proof_photo']['tmp_name'])) {
+    $file = $_FILES['proof_photo'];
+
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        http_response_code(400);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Upload bukti aktivitas gagal.'
+        ]);
+        exit;
+    }
+
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = $finfo ? finfo_file($finfo, $file['tmp_name']) : ($file['type'] ?? 'application/octet-stream');
+    if ($finfo) {
+        finfo_close($finfo);
+    }
+
+    if (!str_starts_with((string) $mimeType, 'image/')) {
+        http_response_code(400);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'File bukti harus berupa gambar.'
+        ]);
+        exit;
+    }
+
+    if ($file['size'] > 5 * 1024 * 1024) {
+        http_response_code(400);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Ukuran file bukti maksimal 5MB.'
+        ]);
+        exit;
+    }
+
+    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/uploads/aktivitas';
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+        throw new RuntimeException('Gagal membuat folder upload bukti aktivitas.');
+    }
+
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+        $extension = 'jpg';
+    }
+
+    $fileName = uniqid('proof_', true) . '.' . $extension;
+    $targetPath = $uploadDir . '/' . $fileName;
+
+    if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Gagal menyimpan file bukti aktivitas.'
+        ]);
+        exit;
+    }
+
+    $photoUrl = '/uploads/aktivitas/' . $fileName;
+}
+
 $activityDate = $payload['activity_date'] ?? date('Y-m-d');
 $activityTime = $payload['activity_time'] ?? date('H:i');
 $activityDateTime = $activityDate . ' ' . $activityTime;
+$location = trim((string) ($payload['location'] ?? ''));
 
 $sql = "
   INSERT INTO public.eco_actions (
     user_id, category_id, title, description, point,
-    verification_type, status, activity_date, co2_saved, water_saved, energy_saved
+    verification_type, status, activity_date, co2_saved, water_saved, energy_saved,
+    location, photo_url, image_url
   ) VALUES (
     :user_id, :category_id, :title, :description, :point,
-    :verification_type, :status, :activity_date, :co2_saved, :water_saved, :energy_saved
+    :verification_type, :status, :activity_date, :co2_saved, :water_saved, :energy_saved,
+    :location, :photo_url, :image_url
   ) RETURNING *
 ";
 
@@ -35,13 +119,16 @@ try {
         ':category_id'       => $payload['category_id'],
         ':title'             => trim((string) $payload['title']),
         ':description'       => trim((string) ($payload['description'] ?? '')),
-        ':point'             => (int)($payload['point'] ?? 0),
+        ':point'             => $point,
         ':verification_type' => $payload['verification_type'] ?? 'manual',
         ':status'            => $payload['status'] ?? 'verified',
         ':activity_date'     => $activityDateTime,
         ':co2_saved'         => (float)($payload['co2_saved'] ?? 0),
         ':water_saved'       => (float)($payload['water_saved'] ?? 0),
-        ':energy_saved'      => (float)($payload['energy_saved'] ?? 0)
+        ':energy_saved'      => (float)($payload['energy_saved'] ?? 0),
+        ':location'          => $location !== '' ? $location : null,
+        ':photo_url'         => $photoUrl,
+        ':image_url'         => $photoUrl,
     ]);
 
     $createdActivity = $stmt->fetch();
