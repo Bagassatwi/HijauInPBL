@@ -26,6 +26,43 @@ function getLevelProgress(int $xp): array {
 
 if (!function_exists('getNotifications')) {
   function getNotifications(string $userId): array {
-    return [];
+    if (empty($userId)) {
+      return [];
+    }
+
+    global $pdo;
+
+    try {
+      $stmt = $pdo->prepare("SELECT id, user_id, title, message, is_read, created_at
+        FROM public.notifications
+        WHERE user_id = :user_id
+        ORDER BY created_at DESC");
+      $stmt->execute([':user_id' => $userId]);
+
+      return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $th) {
+      return [];
+    }
+  }
+}
+
+if (!function_exists('markAllNotificationsAsRead')) {
+  function markAllNotificationsAsRead(string $userId): bool {
+    if (empty($userId)) {
+      return false;
+    }
+
+    global $pdo;
+
+    try {
+      $stmt = $pdo->prepare("UPDATE public.notifications
+        SET is_read = true
+        WHERE user_id = :user_id AND is_read = false");
+      $stmt->execute([':user_id' => $userId]);
+
+      return true;
+    } catch (Throwable $th) {
+      return false;
+    }
   }
 }

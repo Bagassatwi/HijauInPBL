@@ -331,7 +331,9 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
       </div>
 
       <!-- Right Form -->
-      <form id="activityForm" class="col-span-8 overflow-y-auto p-8 space-y-6">
+      <form id="activityForm"
+        class="col-span-8 overflow-y-auto p-8 space-y-6">
+        <input class="hidden" type="text" name="user_id" value="<?php echo $_SESSION['user']['id'] ?>" id="">
         <div>
           <h3 id="selectedCategoryTitle" class="text-2xl font-bold"><?= htmlspecialchars($categories[0]['name'] ?? 'Kategori') ?></h3>
           <p id="selectedCategoryDesc" class="mt-2 leading-7 text-gray-500"><?= htmlspecialchars($categories[0]['description'] ?? '') ?></p>
@@ -348,6 +350,31 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
         <div>
           <label class="mb-2 block text-sm font-semibold text-gray-700">Ceritakan Aktivitasmu</label>
           <textarea name="description" rows="4" placeholder="Contoh: Hari ini saya menanam 3 bibit mangga..." class="w-full rounded-2xl border border-gray-200 p-5 outline-none focus:border-[#11773D]" required></textarea>
+        </div>
+
+        <div>
+          <label class="mb-2 block text-sm font-semibold text-gray-700">
+            Upload Bukti Aktivitas (Opsional)
+          </label>
+
+          <label id="proofUploadLabel" class="flex h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#D7E8DC] bg-[#F8FBF8] transition hover:border-[#11773D] hover:bg-[#F2FAF4]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mb-4 h-12 w-12 text-[#11773D]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5V18a2 2 0 002 2h14a2 2 0 002-2v-1.5M16 8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+
+            <h4 class="font-semibold text-gray-800">Upload Foto</h4>
+
+            <p class="mt-1 text-sm text-gray-500">
+              Drag & Drop atau klik untuk memilih gambar
+            </p>
+
+            <span class="mt-3 rounded-full bg-green-100 px-4 py-2 text-sm font-medium text-[#11773D]">
+              JPG, PNG • Maks 5MB
+            </span>
+
+            <input id="proofPhotoInput" name="proof_photo" type="file" accept="image/*" class="hidden" />
+          </label>
+          <p id="proofFileName" class="mt-2 hidden text-sm font-medium text-[#11773D]"></p>
         </div>
 
         <div class="grid grid-cols-2 gap-5">
@@ -398,6 +425,9 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
     const cancelBtn = document.getElementById("cancelModalBtn");
     const form = document.getElementById("activityForm");
     const submitBtn = document.getElementById("submitBtn");
+    const proofInput = document.getElementById("proofPhotoInput");
+    const proofFileName = document.getElementById("proofFileName");
+    const proofUploadLabel = document.getElementById("proofUploadLabel");
 
     const defaultTitles = {
       'Kebiasaan': 'Membawa Tumbler',
@@ -405,6 +435,22 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
       'Transportasi': 'Naik Transportasi Umum',
       'Lingkungan': 'Menanam Pohon'
     };
+
+    if (proofInput) {
+      proofInput.addEventListener("change", function() {
+        const file = this.files && this.files[0];
+
+        if (file) {
+          proofFileName.textContent = file.name;
+          proofFileName.classList.remove("hidden");
+          proofUploadLabel.classList.add("border-[#11773D]", "bg-[#F2FAF4]");
+        } else {
+          proofFileName.textContent = "";
+          proofFileName.classList.add("hidden");
+          proofUploadLabel.classList.remove("border-[#11773D]", "bg-[#F2FAF4]");
+        }
+      });
+    }
 
     if (openBtn) openBtn.addEventListener("click", () => modal.classList.remove("hidden"));
     if (closeBtn) closeBtn.addEventListener("click", () => modal.classList.add("hidden"));
@@ -435,13 +481,25 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
         submitBtn.disabled = true;
         submitBtn.textContent = "Menyimpan...";
 
+        const pointValue = Number(document.getElementById("pointInput")?.value || 0);
+        const proofFile = proofInput && proofInput.files ? proofInput.files[0] : null;
+
+        if (proofFile && proofFile.size > 5 * 1024 * 1024) {
+          alert("Ukuran foto bukti maksimal 5MB.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Simpan Aktivitas";
+          return;
+        }
+
         const formData = new FormData(this);
+        formData.set("point", String(pointValue));
 
         try {
-          const res = await fetch("/actions/create_activity.php", {
+          const res = await fetch("/dashboard/services/aktivitas/create_activity.php", {
             method: "POST",
-            body: formData
+            body: formData,
           });
+
           const data = await res.json();
 
           if (data.status === "success") {

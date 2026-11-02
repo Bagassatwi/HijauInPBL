@@ -2,7 +2,63 @@
 session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/community.php';
 
+$communityId = $_GET['id'] ?? $_GET['community_id'] ?? null;
+$community = fetchCommunityById((string) ($communityId ?? ''));
+
+if (!$community) {
+  $community = [
+    'id' => null,
+    'name' => 'Komunitas Tidak Ditemukan',
+    'description' => 'Komunitas yang Anda cari tidak tersedia atau belum dibuat.',
+    'city' => 'Indonesia',
+    'image' => '/assets/dashboard-komunitas/bumi.png',
+    'member_count' => 0,
+    'created_at' => date('Y-m-d H:i:s'),
+    'caption' => 'Komunitas tidak tersedia.',
+  ];
+}
+
+$creatorName = 'Anggota Komunitas';
+$communityPosts = [];
+$communityMembers = [];
+
+try {
+  $postsStmt = $pdo->prepare("
+    SELECT cp.id, cp.caption, cp.image, cp.like_count, cp.comment_count, cp.created_at,
+           p.full_name AS user_name, p.avatar_url AS user_avatar
+    FROM public.community_posts cp
+    LEFT JOIN public.profiles p ON p.id = cp.user_id
+    WHERE cp.community_id = :community_id
+    ORDER BY cp.created_at DESC
+    LIMIT 5
+  ");
+  $postsStmt->execute([':community_id' => $community['id']]);
+  $communityPosts = $postsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+  $membersStmt = $pdo->prepare("
+    SELECT p.full_name, p.avatar_url, p.eco_score, cm.joined_at
+    FROM public.community_members cm
+    LEFT JOIN public.profiles p ON p.id = cm.user_id
+    WHERE cm.community_id = :community_id
+    ORDER BY cm.joined_at DESC
+    LIMIT 8
+  ");
+  $membersStmt->execute([':community_id' => $community['id']]);
+  $communityMembers = $membersStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+  $communityPosts = [];
+  $communityMembers = [];
+}
+
+$memberCount = (int) ($community['member_count'] ?? count($communityMembers));
+$websiteBanner = $community['image'] ?: '/assets/dashboard-komunitas/bumi.png';
+$communityJoinedAt = $community['created_at'] ? date('d M Y', strtotime($community['created_at'])) : 'Baru dibuat';
+$communityDescription = $community['description'] ?: ($community['caption'] ?: 'Komunitas ramah lingkungan.');
+$userId = $_SESSION['user']['id'] ?? '';
+$joinedCommunityIds = fetchJoinedCommunityIdsByUser($userId);
+$isUserJoinedCommunity = !empty($community['id']) && in_array((string) $community['id'], $joinedCommunityIds, true);
 $weeklyChartData = [
   ['day' => 'Sen', 'value' => 160],
   ['day' => 'Sel', 'value' => 270],
@@ -14,17 +70,9 @@ $weeklyChartData = [
 ];
 
 $upcomingEvents = [
-  ['img' => 'https://picsum.photos/id/16/80/80', 'title' => 'Aksi Tanam Pohon', 'date' => '25 Mei 2025', 'loc' => 'Bogor, Jawa Barat', 'participants' => '125 peserta'],
-  ['img' => 'https://picsum.photos/id/17/80/80', 'title' => 'Bersih Pantai Bersama', 'date' => '8 Juni 2025', 'loc' => 'Bali', 'participants' => '210 peserta'],
-  ['img' => 'https://picsum.photos/id/18/80/80', 'title' => 'Workshop Zero Waste', 'date' => '15 Juni 2025', 'loc' => 'Online (Zoom)', 'participants' => '150 peserta'],
-];
-
-$activeMembers = [
-  ['rank' => 1, 'avatar' => 'https://picsum.photos/id/1005/50/50', 'name' => 'Dwi Kurniawan', 'badge' => 'Eco Guardian', 'score' => '2.450'],
-  ['rank' => 2, 'avatar' => 'https://picsum.photos/id/64/50/50', 'name' => 'Sinta Ayu', 'badge' => 'Eco Warrior', 'score' => '1.980'],
-  ['rank' => 3, 'avatar' => 'https://picsum.photos/id/65/50/50', 'name' => 'Raka Pratama', 'badge' => 'Eco Hero', 'score' => '1.650'],
-  ['rank' => 4, 'avatar' => 'https://picsum.photos/id/66/50/50', 'name' => 'Nadia Putri', 'badge' => 'Eco Warrior', 'score' => '1.420'],
-  ['rank' => 5, 'avatar' => 'https://picsum.photos/id/67/50/50', 'name' => 'Bagas Aditya', 'badge' => 'Eco Lover', 'score' => '1.250'],
+  ['img' => '/assets/dashboard-komunitas/plant.png', 'title' => 'Aksi Tanam Pohon', 'date' => '25 Mei 2025', 'loc' => 'Bogor, Jawa Barat', 'participants' => '125 peserta'],
+  ['img' => '/assets/dashboard-komunitas/clean.png', 'title' => 'Bersih Pantai Bersama', 'date' => '8 Juni 2025', 'loc' => 'Bali', 'participants' => '210 peserta'],
+  ['img' => '/assets/dashboard-komunitas/energy.png', 'title' => 'Workshop Zero Waste', 'date' => '15 Juni 2025', 'loc' => 'Online (Zoom)', 'participants' => '150 peserta'],
 ];
 ?>
 
@@ -37,30 +85,35 @@ $activeMembers = [
   <!-- Community Header Card -->
   <div class="rounded-3xl overflow-hidden bg-white shadow-sm">
     <div class="h-75 relative w-full">
-      <img src="https://picsum.photos/id/28/1200/400" alt="Banner" class="w-full h-64 object-cover" />
+      <img src="<?= htmlspecialchars($websiteBanner) ?>" alt="Banner" class="w-full h-64 object-cover" />
     </div>
 
     <div class="relative px-8 pt-4 pb-8">
       <div class="lg:flex-row lg:items-end flex flex-col items-start justify-between gap-6">
         <div class="lg:flex-row lg:items-center lg:-mt-20 relative flex flex-col items-start gap-6 -mt-24">
           <div class="shrink-0 relative z-10 w-40 h-40 overflow-hidden bg-white border-4 border-white rounded-full shadow-sm">
-            <img src="https://picsum.photos/id/111/200/200" alt="Avatar" class="object-cover w-full h-full" />
+            <img src="<?= htmlspecialchars($websiteBanner) ?>" alt="Avatar" class="object-cover w-full h-full" />
           </div>
           <div class="lg:mt-16 flex flex-col gap-2 mt-4">
             <h1 class="flex items-center gap-2 text-3xl font-extrabold text-gray-800">
-              Hijau Bersama <span class="text-[#11773D]">✓</span>
+              <?= htmlspecialchars($community['name'] ?? 'Komunitas') ?> <span class="text-[#11773D]">✓</span>
             </h1>
             <div class="flex items-center gap-6 text-base font-semibold text-gray-600">
-              <span>👥 12.450 Anggota</span>
-              <span>📅 Bergabung sejak 12 Mar 2025</span>
+              <span>👥 <?= number_format($memberCount, 0, ',', '.') ?> Anggota</span>
+              <span>📅 Bergabung sejak <?= htmlspecialchars($communityJoinedAt) ?></span>
             </div>
-            <p class="text-base font-medium text-gray-800">Bersama menanam harapan, bersama menjaga bumi.</p>
+            <p class="text-base font-medium text-gray-800"><?= htmlspecialchars($communityDescription) ?></p>
           </div>
         </div>
 
         <div class="lg:w-auto flex items-center w-full gap-3">
-          <button class="bg-[#11773D] rounded-xl flex items-center justify-center flex-1 gap-2 px-6 py-3 text-base font-bold text-white">
-            + Gabung ✓
+          <button
+            type="button"
+            class="join-community-btn bg-[#11773D] rounded-xl flex items-center justify-center flex-1 gap-2 px-6 py-3 text-base font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            data-community-id="<?= htmlspecialchars((string) ($community['id'] ?? '')) ?>"
+            data-joined="<?= $isUserJoinedCommunity ? '1' : '0' ?>"
+            <?= empty($community['id'] ?? '') ? 'disabled' : '' ?>>
+            <?= $isUserJoinedCommunity ? 'Lihat Komunitas' : '+ Gabung ✓' ?>
           </button>
           <button class="border border-[#11773D] text-[#11773D] rounded-xl flex items-center justify-center flex-1 gap-2 px-6 py-3 text-base font-bold">
             Undang Teman
@@ -88,10 +141,9 @@ $activeMembers = [
         </div>
 
         <div class="flex flex-col gap-8 p-8">
-          <!-- Create Post Input -->
           <div class="rounded-2xl p-5 border border-gray-100">
             <div class="flex items-start gap-4 mb-4">
-              <img src="https://picsum.photos/id/1005/50/50" alt="User" class="shrink-0 object-cover w-12 h-12 rounded-full" />
+              <img src="<?= htmlspecialchars($_SESSION['user']['avatar_url'] ?? '/assets/ava1.jpg') ?>" alt="User" class="shrink-0 object-cover w-12 h-12 rounded-full" />
               <div class="rounded-xl bg-gray-50 flex-1 p-4 border border-gray-200">
                 <p class="mb-2 text-base font-bold text-gray-800">Apa aksi hijaumu hari ini?</p>
                 <textarea placeholder="Tulis sesuatu..." class="w-full h-12 text-base font-medium bg-transparent outline-none resize-none"></textarea>
@@ -109,56 +161,37 @@ $activeMembers = [
             </div>
           </div>
 
-          <!-- Feed -->
           <div class="flex flex-col gap-8">
-            <!-- Post 1 -->
-            <div class="flex flex-col gap-4 pb-8 border-b border-gray-100">
-              <div class="flex items-start justify-between">
-                <div class="flex items-center gap-3">
-                  <img src="https://picsum.photos/id/64/50/50" alt="" class="object-cover w-12 h-12 rounded-full" />
-                  <div>
-                    <div class="flex items-center gap-2">
-                      <h4 class="text-lg font-bold text-gray-800">Sinta Ayu</h4>
-                      <span class="bg-[#EEF8F0] text-[#11773D] text-base px-3 py-0.5 rounded-full font-bold">Eco Warrior</span>
+            <?php if (empty($communityPosts)): ?>
+              <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-gray-500">
+                Belum ada postingan di komunitas ini.
+              </div>
+            <?php else: ?>
+              <?php foreach ($communityPosts as $post): ?>
+                <div class="flex flex-col gap-4 pb-8 border-b border-gray-100">
+                  <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-3">
+                      <img src="<?= htmlspecialchars($post['user_avatar'] ?: '/assets/ava1.jpg') ?>" alt="" class="object-cover w-12 h-12 rounded-full" />
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <h4 class="text-lg font-bold text-gray-800"><?= htmlspecialchars($post['user_name'] ?: 'Anggota') ?></h4>
+                          <span class="bg-[#EEF8F0] text-[#11773D] text-base px-3 py-0.5 rounded-full font-bold">Eco Contributor</span>
+                        </div>
+                        <div class="text-base font-medium text-gray-500"><?= htmlspecialchars(date('d M Y', strtotime($post['created_at']))) ?></div>
+                      </div>
                     </div>
-                    <div class="text-base font-medium text-gray-500">2 jam yang lalu</div>
+                  </div>
+                  <p class="text-base font-medium leading-relaxed text-gray-800"><?= nl2br(htmlspecialchars($post['caption'] ?? '')) ?></p>
+                  <?php if (!empty($post['image'])): ?>
+                    <img src="<?= htmlspecialchars($post['image']) ?>" alt="Post" class="h-40 w-full rounded-xl object-cover" />
+                  <?php endif; ?>
+                  <div class="flex gap-6 text-sm text-gray-500">
+                    <span>❤️ <?= (int) ($post['like_count'] ?? 0) ?></span>
+                    <span>💬 <?= (int) ($post['comment_count'] ?? 0) ?></span>
                   </div>
                 </div>
-              </div>
-              <p class="text-base font-medium leading-relaxed text-gray-800">
-                Hari ini kami mengadakan aksi bersih-bersih pantai di Bali bersama teman-teman komunitas! Sampah yang terkumpul sebanyak 45 kg. Yuk, terus jaga kebersihan lingkungan kita! 🌊💚
-              </p>
-              <div class="grid h-40 grid-cols-4 gap-2">
-                <img src="https://picsum.photos/id/29/400/300" alt="" class="object-cover w-full h-full rounded-l-xl" />
-                <img src="https://picsum.photos/id/30/400/300" alt="" class="object-cover w-full h-full" />
-                <img src="https://picsum.photos/id/31/400/300" alt="" class="object-cover w-full h-full" />
-                <div class="relative w-full h-full">
-                  <img src="https://picsum.photos/id/32/400/300" alt="" class="object-cover w-full h-full rounded-r-xl" />
-                  <div class="bg-black/50 absolute inset-0 flex items-center justify-center rounded-r-xl">
-                    <span class="text-3xl font-black text-white">+3</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Post 2 -->
-            <div class="flex flex-col gap-4 pb-8 border-b border-gray-100">
-              <div class="flex items-start justify-between">
-                <div class="flex items-center gap-3">
-                  <img src="https://picsum.photos/id/65/50/50" alt="" class="object-cover w-12 h-12 rounded-full" />
-                  <div>
-                    <div class="flex items-center gap-2">
-                      <h4 class="text-lg font-bold text-gray-800">Raka Pratama</h4>
-                      <span class="bg-[#EEF8F0] text-[#11773D] text-base px-3 py-0.5 rounded-full font-bold">Eco Hero</span>
-                    </div>
-                    <div class="text-base font-medium text-gray-500">5 jam yang lalu</div>
-                  </div>
-                </div>
-              </div>
-              <p class="text-base font-medium leading-relaxed text-gray-800">
-                Baru saja menanam 10 bibit mangrove di pesisir! 🌱<br />Semoga bisa tumbuh besar dan melindungi pantai kita dari abrasi.
-              </p>
-            </div>
+              <?php endforeach; ?>
+            <?php endif; ?>
           </div>
         </div>
       </div>
@@ -171,22 +204,39 @@ $activeMembers = [
         <div class="grid grid-cols-2 gap-4 mb-6">
           <div>
             <div class="mb-2 text-base font-bold text-gray-500">Komunitas Bergabung</div>
-            <div class="text-[#11773D] text-3xl font-black">5</div>
+            <div class="text-[#11773D] text-3xl font-black"><?= number_format((int) ($community['member_count'] ?? 0), 0, ',', '.') ?></div>
           </div>
           <div>
             <div class="mb-2 text-base font-bold text-gray-500">Total Anggota</div>
-            <div class="text-3xl font-black text-gray-800">12.450</div>
+            <div class="text-3xl font-black text-gray-800"><?= number_format((int) count($communityMembers), 0, ',', '.') ?></div>
           </div>
         </div>
         <div class="mb-6">
           <div class="mb-2 text-base font-bold text-gray-800">Deskripsi</div>
-          <p class="text-base font-medium leading-relaxed text-gray-600">
-            Komunitas untuk berbagi tips dan aksi nyata menuju hidup yang lebih ramah lingkungan. Mari bersama wujudkan bumi yang lebih hijau! 🌱
-          </p>
+          <p class="text-base font-medium leading-relaxed text-gray-600"><?= htmlspecialchars($communityDescription) ?></p>
         </div>
       </div>
 
-      <!-- Event Mendatang -->
+      <div class="rounded-3xl p-6 bg-white shadow-sm">
+        <h3 class="text-lg font-bold text-gray-800 mb-6">Anggota Aktif</h3>
+        <div class="flex flex-col gap-5">
+          <?php if (empty($communityMembers)): ?>
+            <div class="text-sm text-gray-500">Belum ada anggota yang tergabung.</div>
+          <?php else: ?>
+            <?php foreach ($communityMembers as $index => $member): ?>
+              <div class="flex items-center gap-4">
+                <img src="<?= htmlspecialchars($member['avatar_url'] ?: '/assets/ava1.jpg') ?>" alt="" class="h-12 w-12 rounded-full object-cover" />
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-bold text-gray-800"><?= htmlspecialchars($member['full_name'] ?: 'Anggota') ?></div>
+                  <div class="text-xs text-gray-500">Eco Score: <?= (int) ($member['eco_score'] ?? 0) ?></div>
+                </div>
+                <span class="text-xs font-bold text-[#11773D]">#<?= $index + 1 ?></span>
+              </div>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </div>
+      </div>
+
       <div class="rounded-3xl p-6 bg-white shadow-sm">
         <h3 class="text-lg font-bold text-gray-800 mb-6">Event Mendatang</h3>
         <div class="flex flex-col gap-5">
@@ -205,5 +255,41 @@ $activeMembers = [
     </div>
   </div>
 </div>
+
+<script>
+  document.querySelectorAll('.join-community-btn').forEach(function(button) {
+    button.addEventListener('click', async function() {
+      const communityId = this.dataset.communityId;
+      if (!communityId) {
+        alert('Komunitas belum tersedia untuk bergabung.');
+        return;
+      }
+
+      if (this.dataset.joined === '1') {
+        window.location.href = '/dashboard/komunitas/detail?id=' + communityId;
+        return;
+      }
+
+      const response = await fetch('/dashboard/actions/community/join_community.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: new URLSearchParams({
+          community_id: communityId
+        }).toString(),
+        credentials: 'same-origin'
+      });
+
+      const result = await response.json();
+      alert(result.message || 'Proses bergabung selesai.');
+
+      if (result.success) {
+        window.location.reload();
+      }
+    });
+  });
+</script>
 
 <?php include_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutclose.php'; ?>
