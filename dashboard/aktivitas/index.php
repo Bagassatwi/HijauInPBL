@@ -375,6 +375,12 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
             <input id="proofPhotoInput" name="proof_photo" type="file" accept="image/*" class="hidden" />
           </label>
           <p id="proofFileName" class="mt-2 hidden text-sm font-medium text-[#11773D]"></p>
+
+          <div id="proofPreviewWrapper" class="mt-4 hidden">
+            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+              <img id="proofPreview" alt="Preview bukti aktivitas" class="h-48 w-full rounded-xl object-cover" />
+            </div>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-5">
@@ -428,6 +434,9 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
     const proofInput = document.getElementById("proofPhotoInput");
     const proofFileName = document.getElementById("proofFileName");
     const proofUploadLabel = document.getElementById("proofUploadLabel");
+    const proofPreviewWrapper = document.getElementById("proofPreviewWrapper");
+    const proofPreview = document.getElementById("proofPreview");
+    let currentProofUrl = null;
 
     const defaultTitles = {
       'Kebiasaan': 'Membawa Tumbler',
@@ -441,10 +450,24 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
         const file = this.files && this.files[0];
 
         if (file) {
+          if (currentProofUrl) {
+            URL.revokeObjectURL(currentProofUrl);
+          }
+
+          currentProofUrl = URL.createObjectURL(file);
+          proofPreview.src = currentProofUrl;
+          proofPreviewWrapper.classList.remove("hidden");
           proofFileName.textContent = file.name;
           proofFileName.classList.remove("hidden");
           proofUploadLabel.classList.add("border-[#11773D]", "bg-[#F2FAF4]");
         } else {
+          if (currentProofUrl) {
+            URL.revokeObjectURL(currentProofUrl);
+            currentProofUrl = null;
+          }
+
+          proofPreview.removeAttribute("src");
+          proofPreviewWrapper.classList.add("hidden");
           proofFileName.textContent = "";
           proofFileName.classList.add("hidden");
           proofUploadLabel.classList.remove("border-[#11773D]", "bg-[#F2FAF4]");
