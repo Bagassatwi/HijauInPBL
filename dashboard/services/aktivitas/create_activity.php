@@ -3,6 +3,53 @@ header('Content-Type: application/json');
 
 include_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
 
+function uploadActivityToSupabase(array $file): string {
+    $projectUrl = getenv('PROJECT_URL');
+    $serviceRoleKey = getenv('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (empty($projectUrl) || empty($serviceRoleKey)) {
+        throw new RuntimeException('Konfigurasi Supabase belum tersedia.');
+    }
+
+    if (!function_exists('curl_init')) {
+        throw new RuntimeException('PHP cURL tidak tersedia untuk upload ke Supabase.');
+    }
+
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+    if (!in_array($extension, $allowedExtensions, true)) {
+        $extension = 'jpg';
+    }
+
+    $objectName = uniqid('activity_', true) . '.' . $extension;
+    $bucket = 'activity';
+    $uploadUrl = rtrim($projectUrl, '/') . '/storage/v1/object/' . $bucket . '/' . rawurlencode($objectName);
+
+    $cfile = new CURLFile($file['tmp_name'], $file['type'] ?: 'application/octet-stream', $file['name']);
+
+    $ch = curl_init($uploadUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POSTFIELDS => ['file' => $cfile],
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $serviceRoleKey,
+            'apikey: ' . $serviceRoleKey,
+        ],
+        CURLOPT_CAINFO => $_SERVER['DOCUMENT_ROOT'] . '/cacert-2026-09-25.pem',
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+
+    if ($response === false || !empty($curlError) || $httpCode >= 400) {
+        throw new RuntimeException('Upload ke Supabase gagal: ' . ($curlError ?: $response ?: 'HTTP ' . $httpCode));
+    }
+
+    return rtrim($projectUrl, '/') . '/storage/v1/object/public/' . $bucket . '/' . rawurlencode($objectName);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode([
@@ -70,29 +117,16 @@ if (isset($_FILES['proof_photo']) && !empty($_FILES['proof_photo']['tmp_name']))
         exit;
     }
 
-    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/uploads/aktivitas';
-    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
-        throw new RuntimeException('Gagal membuat folder upload bukti aktivitas.');
-    }
-
-    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)) {
-        $extension = 'jpg';
-    }
-
-    $fileName = uniqid('proof_', true) . '.' . $extension;
-    $targetPath = $uploadDir . '/' . $fileName;
-
-    if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+    try {
+        $photoUrl = uploadActivityToSupabase($file);
+    } catch (Throwable $e) {
         http_response_code(500);
         echo json_encode([
             'status' => 'error',
-            'message' => 'Gagal menyimpan file bukti aktivitas.'
+            'message' => $e->getMessage()
         ]);
         exit;
     }
-
-    $photoUrl = '/uploads/aktivitas/' . $fileName;
 }
 
 $activityDate = $payload['activity_date'] ?? date('Y-m-d');
