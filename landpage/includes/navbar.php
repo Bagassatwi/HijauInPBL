@@ -67,7 +67,7 @@ $navItems = [
           <?php foreach ($navItems as $item): ?>
             <?php 
               $isActive = ($active_path === $item['href']);
-              $linkTarget = $item['href'] === "" ? "/index.php" : "/" . $item['href'] . ".php";
+              $linkTarget = $item['href'] === "" ? "/index.php" : "/landpage/" . $item['href'];
             ?>
             <a
               href="<?= $linkTarget; ?>"
