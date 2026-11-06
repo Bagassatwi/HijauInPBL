@@ -1,17 +1,27 @@
 -- 1. Tables without foreign keys
-CREATE TABLE public.articles (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  title text NOT NULL,
-  slug text UNIQUE,
-  thumbnail text,
-  category text,
-  summary text,
-  content text,
-  author text,
-  read_time integer,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT articles_pkey PRIMARY KEY (id)
-);
+create table public.article_category (
+  id uuid not null default gen_random_uuid (),
+  name text not null,
+  icon text not null,
+  created_at timestamp with time zone not null default now(),
+  constraint article_category_pkey primary key (id)
+) TABLESPACE pg_default;
+
+create table public.articles (
+  id uuid not null default gen_random_uuid (),
+  title text not null,
+  slug text not null,
+  thumbnail text null,
+  summary text not null,
+  content text not null,
+  author text not null,
+  read_time integer null,
+  created_at timestamp with time zone null default now(),
+  article_category_id uuid not null,
+  constraint articles_pkey primary key (id),
+  constraint articles_slug_key unique (slug),
+  constraint articles_article_category_id_fkey foreign KEY (article_category_id) references article_category (id)
+) TABLESPACE pg_default;
 
 CREATE TABLE public.badges (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
