@@ -1,34 +1,36 @@
 <?php
+$baseUrl = ""; 
+
 $stats = [
     [
         "value" => "125.430 kg",
         "line1" => "Sampah Berhasil",
         "line2" => "Dikelola",
-        "icon" => "assets/beranda/daun2.png",
+        "icon" => $baseUrl . "/assets/beranda/daun2.png",
     ],
     [
         "value" => "82.340 kg",
         "line1" => "CO₂ Berhasil",
         "line2" => "Dikurangi",
-        "icon" => "assets/beranda/awan.png",
+        "icon" => $baseUrl . "/assets/beranda/awan.png",
     ],
     [
         "value" => "5.243",
         "line1" => "Pohon Berhasil",
         "line2" => "Ditanam",
-        "icon" => "assets/beranda/pohon.png",
+        "icon" => $baseUrl . "/assets/beranda/pohon.png",
     ],
     [
         "value" => "15.000+",
         "line1" => "Pengguna Aktif",
         "line2" => "",
-        "icon" => "assets/beranda/person.png",
+        "icon" => $baseUrl . "/assets/beranda/person.png",
     ],
     [
         "value" => "320+",
         "line1" => "Komunitas",
         "line2" => "Bergabung",
-        "icon" => "assets/beranda/bank.png",
+        "icon" => $baseUrl . "/assets/beranda/bank.png",
     ],
 ];
 ?>
