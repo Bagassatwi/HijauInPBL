@@ -1,32 +1,248 @@
 <?php
-include "./layout/layoutopen.php";
+session_start();
+require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
 
-$chartData = [
-  ["day" => "Sen", "eco" => 60,  "co2" => 140],
-  ["day" => "Sel", "eco" => 130, "co2" => 260],
-  ["day" => "Rab", "eco" => 110, "co2" => 280],
-  ["day" => "Kam", "eco" => 190, "co2" => 360],
-  ["day" => "Jum", "eco" => 80,  "co2" => 280],
-  ["day" => "Sab", "eco" => 190, "co2" => 360],
-  ["day" => "Min", "eco" => 300, "co2" => 490],
+$userId = $_SESSION['user']['id'] ?? null;
+if (!$userId) {
+  header('Location: /login.php');
+  exit;
+}
+
+$normalizeMissionText = function (string $value): string {
+  $value = strtolower(trim($value));
+  $value = preg_replace('/\s+/', ' ', $value);
+  return str_replace(['-', '_'], ' ', $value);
+};
+
+$userStmt = $pdo->prepare("SELECT * FROM public.profiles WHERE id = :id LIMIT 1");
+$userStmt->execute([':id' => $userId]);
+$userProfile = $userStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+$fullName = $userProfile['full_name'] ?? ($_SESSION['user']['full_name'] ?? $_SESSION['user']['name'] ?? 'User');
+$avatarUrl = !empty($userProfile['avatar_url']) ? $userProfile['avatar_url'] : '/assets/avatar.png';
+$ecoScore = (int) ($userProfile['eco_score'] ?? 0);
+$xp = (int) ($userProfile['xp'] ?? 0);
+$level = (int) ($userProfile['level'] ?? 1);
+$streak = (int) ($userProfile['streak'] ?? 0);
+
+$levelLabel = 'Eco Guardian';
+$nextLevelXp = 1000;
+$xpProgressPercentage = min(100, round(($xp / max(1, $nextLevelXp)) * 100));
+
+$todayStatsStmt = $pdo->prepare("
+  SELECT
+    COUNT(*) AS total_actions,
+    COALESCE(SUM(point), 0) AS total_points,
+    COALESCE(SUM(COALESCE(co2_saved, 0)), 0) AS co2_saved,
+    COALESCE(SUM(COALESCE(water_saved, 0)), 0) AS water_saved,
+    COALESCE(SUM(COALESCE(energy_saved, 0)), 0) AS energy_saved
+  FROM public.eco_actions
+  WHERE user_id = :user_id AND activity_date::date = CURRENT_DATE
+");
+$todayStatsStmt->execute([':user_id' => $userId]);
+$todayStats = $todayStatsStmt->fetch(PDO::FETCH_ASSOC) ?: [
+  'total_actions' => 0,
+  'total_points' => 0,
+  'co2_saved' => 0,
+  'water_saved' => 0,
+  'energy_saved' => 0,
 ];
 
-$missions = [
-  ["title" => "Bawa tumbler", "point" => "+20", "done" => true],
-  ["title" => "Matikan lampu 1 jam", "point" => "+20", "done" => true],
-  ["title" => "Naik transportasi umum", "point" => "+30", "done" => true],
-  ["title" => "Hemat air 20 liter", "point" => "+20", "done" => false],
-  ["title" => "Tanam tanaman", "point" => "+50", "done" => false],
+$todayActionsCount = (int) ($todayStats['total_actions'] ?? 0);
+$todayActionsTarget = 5;
+$todayActionsPercent = min(100, round(($todayActionsCount / max(1, $todayActionsTarget)) * 100));
+
+$compareStmt = $pdo->prepare("
+  SELECT COALESCE(SUM(point), 0) AS total_points
+  FROM public.eco_actions
+  WHERE user_id = :user_id AND activity_date::date = CURRENT_DATE - INTERVAL '1 day'
+");
+$compareStmt->execute([':user_id' => $userId]);
+$yesterdayPoints = (int) ($compareStmt->fetch(PDO::FETCH_COLUMN) ?: 0);
+$ecoDelta = $ecoScore - $yesterdayPoints;
+$ecoDeltaText = ($ecoDelta >= 0 ? '▲ ' : '▼ ') . abs($ecoDelta) . ' dari kemarin';
+$ecoDeltaColorClass = $ecoDelta >= 0 ? 'text-[#11773D]' : 'text-[#D92D20]';
+
+$weeklyStmt = $pdo->prepare("
+  WITH last7 AS (
+    SELECT generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, INTERVAL '1 day')::date AS activity_day
+  )
+  SELECT
+    last7.activity_day AS day,
+    COALESCE(SUM(e.point), 0) AS eco,
+    COALESCE(SUM(COALESCE(e.co2_saved, 0)), 0) AS co2
+  FROM last7
+  LEFT JOIN public.eco_actions e
+    ON e.user_id = :user_id AND e.activity_date::date = last7.activity_day
+  GROUP BY last7.activity_day
+  ORDER BY last7.activity_day ASC
+");
+$weeklyStmt->execute([':user_id' => $userId]);
+$weeklyRows = $weeklyStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$dayMap = [
+  'Mon' => 'Sen',
+  'Tue' => 'Sel',
+  'Wed' => 'Rab',
+  'Thu' => 'Kam',
+  'Fri' => 'Jum',
+  'Sat' => 'Sab',
+  'Sun' => 'Min',
 ];
+
+$chartData = [];
+foreach ($weeklyRows as $row) {
+  $date = $row['day'] ?? null;
+  $chartData[] = [
+    'day' => $dayMap[date('D', strtotime($date))] ?? 'Sen',
+    'eco' => (int) ($row['eco'] ?? 0),
+    'co2' => (float) ($row['co2'] ?? 0),
+  ];
+}
+
+if (count($chartData) < 7) {
+  $filledData = [];
+  $cursor = new DateTimeImmutable('-6 days');
+  foreach ($chartData as $item) {
+    $filledData[] = $item;
+    $cursor = $cursor->modify('+1 day');
+  }
+
+  while (count($filledData) < 7) {
+    $filledData[] = [
+      'day' => $dayMap[$cursor->format('D')] ?? $cursor->format('D'),
+      'eco' => 0,
+      'co2' => 0,
+    ];
+    $cursor = $cursor->modify('+1 day');
+  }
+  $chartData = $filledData;
+}
+
+$recentActionsStmt = $pdo->prepare("
+  SELECT *
+  FROM public.eco_actions
+  WHERE user_id = :user_id
+  ORDER BY activity_date DESC
+  LIMIT 5
+");
+$recentActionsStmt->execute([':user_id' => $userId]);
+$recentActions = $recentActionsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$missionSeeds = [
+  ['title' => 'Membawa tumbler', 'point' => '+20'],
+  ['title' => 'Matikan lampu 1 jam', 'point' => '+20'],
+  ['title' => 'Naik transportasi umum', 'point' => '+30'],
+  ['title' => 'Hemat air 20 liter', 'point' => '+20'],
+  ['title' => 'Menanam pohon', 'point' => '+50'],
+];
+
+$completedMissionTitles = [];
+foreach ($recentActions as $action) {
+  $completedMissionTitles[] = $normalizeMissionText((string) ($action['title'] ?? ''));
+}
+
+$missions = [];
+foreach ($missionSeeds as $mission) {
+  $missions[] = [
+    'title' => $mission['title'],
+    'point' => $mission['point'],
+    'done' => in_array($normalizeMissionText($mission['title']), $completedMissionTitles, true),
+  ];
+}
+
+$activityIconMap = [
+  'membawa tumbler' => '/assets/tumbler.png',
+  'naik transportasi umum' => '/assets/bus.png',
+  'hemat air 20 liter' => '/assets/air.png',
+  'matikan lampu 1 jam' => '/assets/dashboard/lampu.png',
+  'pilah sampah' => '/assets/sampah.png',
+  'menanam pohon' => '/assets/pohon.png',
+  'tanam pohon' => '/assets/pohon.png',
+];
+
+$latestActivities = [];
+foreach (array_slice($recentActions, 0, 3) as $activity) {
+  $title = trim((string) ($activity['title'] ?? 'Aktivitas baru'));
+  $normalizedTitle = $normalizeMissionText($title);
+
+  $latestActivities[] = [
+    'title' => $title,
+    'point' => (int) ($activity['point'] ?? 0),
+    'time' => date('d.m H:i', strtotime((string) ($activity['activity_date'] ?? date('Y-m-d H:i:s')))),
+    'icon' => $activityIconMap[$normalizedTitle] ?? '/assets/tumbler.png',
+  ];
+}
+
+$activeChallengeStmt = $pdo->prepare("
+  SELECT
+    uc.progress,
+    uc.target,
+    uc.status,
+    ch.title,
+    ch.image,
+    ch.reward_point,
+    ch.duration
+  FROM public.user_challenges uc
+  JOIN public.challenges ch ON ch.id = uc.challenge_id
+  WHERE uc.user_id = :user_id AND uc.status = 'active'
+  ORDER BY uc.joined_at DESC
+  LIMIT 1
+");
+$activeChallengeStmt->execute([':user_id' => $userId]);
+$activeChallenge = $activeChallengeStmt->fetch(PDO::FETCH_ASSOC);
+
+if ($activeChallenge) {
+  $challengeTitle = (string) ($activeChallenge['title'] ?? 'Challenge aktif');
+  $challengeImage = !empty($activeChallenge['image']) ? $activeChallenge['image'] : '/assets/dashboard/plastic.png';
+  $challengeProgress = (int) ($activeChallenge['progress'] ?? 0);
+  $challengeTarget = max(1, (int) ($activeChallenge['target'] ?? $activeChallenge['duration'] ?? 30));
+  $challengePercent = min(100, round(($challengeProgress / $challengeTarget) * 100));
+  $challengeReward = (int) ($activeChallenge['reward_point'] ?? 500);
+  $challengeDayText = $challengeTarget > 0 ? "Hari <span class='font-bold text-[#11773D]'>" . min($challengeProgress, $challengeTarget) . "</span> / " . $challengeTarget : 'Belum dimulai';
+} else {
+  $challengeTitle = 'Belum ada challenge aktif';
+  $challengeImage = '/assets/dashboard/plastic.png';
+  $challengeProgress = 0;
+  $challengeTarget = 1;
+  $challengePercent = 0;
+  $challengeReward = 0;
+  $challengeDayText = "Belum ada challenge";
+}
+
+$badgeStmt = $pdo->prepare("
+  SELECT b.name, b.image
+  FROM public.user_badges ub
+  JOIN public.badges b ON b.id = ub.badge_id
+  WHERE ub.user_id = :user_id
+  ORDER BY ub.earned_at DESC
+  LIMIT 4
+");
+$badgeStmt->execute([':user_id' => $userId]);
+$badges = $badgeStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$badgeFallback = [
+  ['name' => 'Eco Warrior', 'image' => '/assets/dashboard/ecowarrior.png'],
+  ['name' => 'Plastic Free', 'image' => '/assets/dashboard/plastic-free.png'],
+  ['name' => 'Water Saver', 'image' => '/assets/dashboard/water-saver.png'],
+  ['name' => 'Earth Lover', 'image' => '/assets/dashboard/earth.png'],
+];
+
+if (empty($badges)) {
+  $badges = $badgeFallback;
+}
+
+$usageText = $todayActionsCount > 0
+  ? 'Kamu sudah menorehkan aksi hijau hari ini.'
+  : 'Mulai hari ini dengan satu aksi hijau kecil!';
 ?>
 
 <div class="flex flex-col gap-6 mx-auto w-full">
   <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[4fr_2fr_4fr_2fr]">
 
-    <!-- Eco Score -->
     <div class="rounded-3xl bg-white p-6 shadow-sm">
       <div class="flex h-full">
-        <!-- left -->
         <div class="flex flex-1 flex-col justify-between pr-6">
           <div class="flex items-center gap-2">
             <h3 class="text-[22px] font-semibold text-[#101828]">Eco Score</h3>
@@ -38,41 +254,38 @@ $missions = [
           </div>
 
           <div class="mt-6">
-            <h2 class="text-[64px] font-semibold leading-none text-[#11773D]">2.450</h2>
+            <h2 class="text-[64px] font-semibold leading-none text-[#11773D]"><?= number_format($ecoScore, 0, ',', '.') ?></h2>
             <p class="mt-3 text-[18px] font-medium text-[#667085]">Eco Point</p>
-            <div class="mt-8 flex items-center gap-2 text-[18px] font-semibold text-[#11773D]">
-              <span>▲</span>
-              <span>120 dari kemarin</span>
+            <div class="mt-8 flex items-center gap-2 text-[18px] font-semibold <?= $ecoDeltaColorClass ?>">
+              <span><?= $ecoDelta >= 0 ? '▲' : '▼' ?></span>
+              <span><?= htmlspecialchars($ecoDeltaText) ?></span>
             </div>
           </div>
         </div>
-        <!-- divider -->
         <div class="mx-2 w-px bg-[#EAECF0]"></div>
-        <!-- right -->
         <div class="flex w-45 flex-col items-center justify-between pl-6">
           <div class="text-center">
             <p class="text-[18px] font-semibold text-[#667085]">Level</p>
-            <p class="mt-1 text-[20px] font-bold text-[#11773D]">Eco Guardian</p>
+            <p class="mt-1 text-[20px] font-bold text-[#11773D]"><?= htmlspecialchars($levelLabel) ?></p>
           </div>
 
           <div class="relative mt-4">
             <img src="/assets/dashboard/ecoguardian.png" alt="Eco Guardian" class="w-22.5 h-30 object-contain" />
             <div class="absolute -bottom-2 left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full bg-[#11773D] text-[12px] font-bold text-white">
-              12
+              <?= (int) $level ?>
             </div>
           </div>
 
           <div class="mt-5 w-full">
             <div class="h-2.5 overflow-hidden rounded-full bg-[#DCE7DE]">
-              <div class="h-full rounded-full bg-[#11773D]" style="width: 76%;"></div>
+              <div class="h-full rounded-full bg-[#11773D]" style="width: <?= $xpProgressPercentage ?>%;"></div>
             </div>
-            <p class="mt-3 text-center text-[18px] font-semibold text-[#475467]">760 / 1000 XP</p>
+            <p class="mt-3 text-center text-[18px] font-semibold text-[#475467]"><?= number_format($xp, 0, ',', '.') ?> / <?= number_format($nextLevelXp, 0, ',', '.') ?> XP</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Aksi Hari Ini -->
     <div class="rounded-3xl bg-white p-6 shadow-sm">
       <div class="mb-8 flex items-center gap-3">
         <svg class="h-7 w-7 text-[#11773D]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
@@ -83,20 +296,19 @@ $missions = [
 
       <div>
         <div class="flex items-end gap-2">
-          <span class="text-[58px] font-bold leading-none text-[#11773D]">3</span>
-          <span class="text-[58px] font-bold leading-none text-[#11773D]">/ 5</span>
+          <span class="text-[58px] font-bold leading-none text-[#11773D]"><?= $todayActionsCount ?></span>
+          <span class="text-[58px] font-bold leading-none text-[#11773D]">/ <?= $todayActionsTarget ?></span>
         </div>
         <p class="mt-3 text-[20px] font-semibold text-[#475467]">Selesai</p>
 
         <div class="mt-8 h-2.5 w-full overflow-hidden rounded-full bg-[#DFE7E2]">
-          <div class="h-full rounded-full bg-[#11773D]" style="width: 60%;"></div>
+          <div class="h-full rounded-full bg-[#11773D]" style="width: <?= $todayActionsPercent ?>%;"></div>
         </div>
 
-        <p class="mt-7 text-[15px] font-medium text-[#667085]">Teruskan! Kamu bisa lebih hebat lagi! 💚</p>
+        <p class="mt-7 text-[15px] font-medium text-[#667085]"><?= htmlspecialchars($usageText) ?> 💚</p>
       </div>
     </div>
 
-    <!-- Dampak Hari Ini -->
     <div class="rounded-3xl bg-white p-6 shadow-sm">
       <h3 class="mb-8 flex items-center gap-2 text-[22px] font-semibold text-[#101828]">
         <svg class="w-6 h-6 text-[#11773D]" fill="currentColor" viewBox="0 0 24 24">
@@ -106,33 +318,32 @@ $missions = [
       </h3>
 
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 *:grid *:grid-rows-[1fr_1fr_auto] *:*:m-auto text-center">
-        <div class="">
-          <img src="/assets/co2.png" alt="CO2" class="mb-4 h-15 w-15 object-contain " />
+        <div>
+          <img src="/assets/co2.png" alt="CO2" class="mb-4 h-15 w-15 object-contain" />
           <p class="text-[14px] font-medium text-[#667085]">CO₂ Dihindari</p>
-          <p class="mt-3 text-[20px] font-bold text-[#11773D]">1,2 kg</p>
+          <p class="mt-3 text-[20px] font-bold text-[#11773D]"><?= number_format((float) ($todayStats['co2_saved'] ?? 0), 1, ',', '.') ?> kg</p>
         </div>
 
-        <div class="">
+        <div>
           <img src="/assets/air.png" alt="Air" class="h-9.5 w-9.5 object-contain text-center" />
           <p class="text-[14px] font-medium text-[#667085]">Air Dihemat</p>
-          <p class="mt-3 text-[20px] font-bold text-[#11773D]">45 L</p>
+          <p class="mt-3 text-[20px] font-bold text-[#11773D]"><?= number_format((float) ($todayStats['water_saved'] ?? 0), 0, ',', '.') ?> L</p>
         </div>
 
-        <div class="">
+        <div>
           <img src="/assets/dashboard/petir.png" alt="Energi" class="mb-4 h-9.5 w-9.5 object-contain" />
           <p class="text-[14px] font-medium text-[#667085]">Energi Dihemat</p>
-          <p class="mt-3 text-[20px] font-bold text-[#11773D]">2 kWh</p>
+          <p class="mt-3 text-[20px] font-bold text-[#11773D]"><?= number_format((float) ($todayStats['energy_saved'] ?? 0), 1, ',', '.') ?> kWh</p>
         </div>
 
-        <div class="">
+        <div>
           <img src="/assets/pohon.png" alt="Pohon" class="mb-4 h-15 w-15 object-contain" />
           <p class="text-[14px] font-medium text-[#667085]">Pohon Ditanam</p>
-          <p class="mt-3 text-[20px] font-bold text-[#11773D]">1 Pohon</p>
+          <p class="mt-3 text-[20px] font-bold text-[#11773D]"><?= min(99, (int) round((float) ($todayStats['co2_saved'] ?? 0) / 1.2)) ?> Pohon</p>
         </div>
       </div>
     </div>
 
-    <!-- Streak -->
     <div class="grid grid-cols-2 rounded-3xl border border-[#EAECF0] bg-white p-6 shadow-sm">
       <div class="flex flex-col justify-between">
         <h3 class="flex items-center gap-2 text-[22px] font-semibold text-[#101828]">
@@ -142,7 +353,7 @@ $missions = [
           Streak
         </h3>
         <span>
-          <h2 class="text-5xl font-semibold leading-none text-[#11773D]">12</h2>
+          <h2 class="text-5xl font-semibold leading-none text-[#11773D]"><?= $streak ?></h2>
           <p class="mt-2 text-2xl font-semibold text-[#475467]">Hari</p>
         </span>
         <p class="font-medium leading-relaxed text-[#667085]">Pertahankan streak-mu!</p>
@@ -222,8 +433,12 @@ $missions = [
         <div class="flex gap-4">
           <img src="/assets/dashboard/ai.png" alt="AI Robot" class="w-20 h-20 object-contain shrink-0" />
           <div class="relative rounded-[20px] bg-[#F8FAFC] p-4 text-[13px] leading-relaxed text-[#667085]">
-            <h4 class="mb-1 text-[16px] font-bold text-[#101828]">Halo Budi! 👋</h4>
-            <p>Kemarin kamu berhasil menghemat 1,2 kg CO₂. Jika hari ini naik transportasi umum lagi, kita bisa menghemat lebih banyak!</p>
+            <h4 class="mb-1 text-[16px] font-bold text-[#101828]">Halo <?= htmlspecialchars(explode(' ', $fullName)[0]) ?>! 👋</h4>
+            <p>
+              <?= $todayActionsCount > 0
+                ? 'Hari ini kamu sudah mencatat ' . $todayActionsCount . ' aksi hijau. Lanjutkan momentummu dengan satu aksi baru lagi.'
+                : 'Kamu belum mencatat aksi hijau hari ini. Mulai dengan membawa tumbler atau naik transportasi umum.'; ?>
+            </p>
           </div>
         </div>
 
@@ -245,19 +460,19 @@ $missions = [
       </div>
       <div class="flex items-center gap-6">
         <div class="flex h-32 w-32 shrink-0 items-center justify-center rounded-full bg-[#F1F8F3]">
-          <img src="/assets/dashboard/plastic.png" alt="Bottle" class="h-24 w-24 object-cover" />
+          <img src="<?= htmlspecialchars($challengeImage) ?>" alt="Challenge" class="h-24 w-24 object-cover" />
         </div>
         <div class="flex-1">
-          <h4 class="mb-1 text-xl font-bold">30 Hari Tanpa Plastik</h4>
+          <h4 class="mb-1 text-xl font-bold"><?= htmlspecialchars($challengeTitle) ?></h4>
           <div class="mb-3 text-base font-semibold text-gray-500">
-            Hari <span class="font-bold text-[#11773D]">12</span> / 30
+            <?= $challengeDayText ?>
           </div>
           <div class="mb-4 h-2 w-full rounded-full bg-gray-200">
-            <div class="h-2 w-[40%] rounded-full bg-[#11773D]"></div>
+            <div class="h-2 rounded-full bg-[#11773D]" style="width: <?= $challengePercent ?>%;"></div>
           </div>
           <div class="flex flex-col gap-1 text-sm font-bold text-gray-600 sm:flex-row sm:gap-4">
-            <span>✓ 500 Eco Point</span>
-            <span>🏆 Eco Badge</span>
+            <span>✓ <?= number_format($challengeReward, 0, ',', '.') ?> Eco Point</span>
+            <span>🏆 Badge</span>
           </div>
         </div>
       </div>
@@ -270,26 +485,13 @@ $missions = [
       </div>
 
       <div class="grid grid-cols-4 gap-2 text-center">
-        <div>
-          <img src="/assets/dashboard/ecowarrior.png" alt="Eco Warrior" class="mx-auto h-16 w-16 object-contain" />
-          <h4 class="mt-2 text-xs font-semibold text-[#344054]">Eco Warrior</h4>
-          <p class="mt-1 text-xs font-medium text-[#11773D]">Diperoleh</p>
-        </div>
-        <div>
-          <img src="/assets/dashboard/plastic-free.png" alt="Plastic Free" class="mx-auto h-16 w-16 object-contain" />
-          <h4 class="mt-2 text-xs font-semibold text-[#344054]">Plastic Free</h4>
-          <p class="mt-1 text-xs font-medium text-[#11773D]">Diperoleh</p>
-        </div>
-        <div>
-          <img src="/assets/dashboard/water-saver.png" alt="Water Saver" class="mx-auto h-16 w-16 object-contain" />
-          <h4 class="mt-2 text-xs font-semibold text-[#344054]">Water Saver</h4>
-          <p class="mt-1 text-xs font-medium text-[#667085]">80%</p>
-        </div>
-        <div class="opacity-50">
-          <img src="/assets/dashboard/earth.png" alt="Earth Lover" class="mx-auto h-16 w-16 object-contain grayscale" />
-          <h4 class="mt-2 text-xs font-semibold text-[#344054]">Earth Lover</h4>
-          <p class="mt-1 text-xs font-semibold text-[#667085]">40%</p>
-        </div>
+        <?php foreach (array_slice($badges, 0, 4) as $badge): ?>
+          <div>
+            <img src="<?= htmlspecialchars($badge['image'] ?? '/assets/dashboard/earth.png') ?>" alt="<?= htmlspecialchars($badge['name'] ?? 'Badge') ?>" class="mx-auto h-16 w-16 object-contain" />
+            <h4 class="mt-2 text-xs font-semibold text-[#344054]"><?= htmlspecialchars($badge['name'] ?? 'Badge') ?></h4>
+            <p class="mt-1 text-xs font-medium text-[#11773D]">Diperoleh</p>
+          </div>
+        <?php endforeach; ?>
       </div>
     </div>
 
@@ -299,44 +501,20 @@ $missions = [
         <button class="text-base font-bold text-[#11773D]">Lihat Semua</button>
       </div>
       <div class="flex flex-col gap-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="rounded-xl bg-[#EEF8F0] p-2.5">
-              <img src="/assets/tumbler.png" alt="Tumbler" class="h-6 w-6 object-contain" />
+        <?php foreach ($latestActivities as $activity): ?>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="rounded-xl bg-[#EEF8F0] p-2.5">
+                <img src="<?= htmlspecialchars($activity['icon']) ?>" alt="<?= htmlspecialchars($activity['title']) ?>" class="h-6 w-6 object-contain" />
+              </div>
+              <div>
+                <div class="text-sm font-bold text-[#0B0F1F]"><?= htmlspecialchars($activity['title']) ?></div>
+                <div class="text-xs text-gray-500">Hari ini • <?= htmlspecialchars($activity['time']) ?></div>
+              </div>
             </div>
-            <div>
-              <div class="text-sm font-bold text-[#0B0F1F]">Membawa tumbler</div>
-              <div class="text-xs text-gray-500">Hari ini • 08.30</div>
-            </div>
+            <span class="text-sm font-bold text-[#11773D]">+<?= (int) $activity['point'] ?> poin</span>
           </div>
-          <span class="text-sm font-bold text-[#11773D]">+20 poin</span>
-        </div>
-
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="rounded-xl bg-[#F2F4F7] p-2.5">
-              <img src="/assets/bus.png" alt="Bus" class="h-6 w-6 object-contain" />
-            </div>
-            <div>
-              <div class="text-sm font-bold text-[#0B0F1F]">Naik transportasi umum</div>
-              <div class="text-xs text-gray-500">Hari ini • 07.45</div>
-            </div>
-          </div>
-          <span class="text-sm font-bold text-[#11773D]">+30 poin</span>
-        </div>
-
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="rounded-xl bg-[#EAF6FF] p-2.5">
-              <img src="/assets/air.png" alt="Air" class="h-6 w-6 object-contain" />
-            </div>
-            <div>
-              <div class="text-sm font-bold text-[#0B0F1F]">Hemat air 20 liter</div>
-              <div class="text-xs text-gray-500">Kemarin • 18.20</div>
-            </div>
-          </div>
-          <span class="text-sm font-bold text-[#11773D]">+20 poin</span>
-        </div>
+        <?php endforeach; ?>
       </div>
     </div>
   </div>
@@ -355,7 +533,7 @@ $missions = [
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const width = rect.width;
       const height = rect.height;
@@ -371,7 +549,6 @@ $missions = [
 
       ctx.clearRect(0, 0, width, height);
 
-      // Draw horizontal grid lines
       ctx.strokeStyle = '#F2F4F7';
       ctx.fillStyle = '#667085';
       ctx.font = '12px sans-serif';
@@ -388,7 +565,6 @@ $missions = [
         ctx.fillText(val, 0, y + 4);
       }
 
-      // Draw Series Line + Area
       function drawSeries(key, strokeColor, fillColor) {
         ctx.beginPath();
         rawData.forEach((d, i) => {
@@ -398,12 +574,10 @@ $missions = [
           else ctx.lineTo(x, y);
         });
 
-        // Stroke line
         ctx.strokeStyle = strokeColor;
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Fill area
         const lastX = padding.left + chartWidth;
         const firstX = padding.left;
         const bottomY = height - padding.bottom;
@@ -415,7 +589,6 @@ $missions = [
         ctx.fill();
       }
 
-      // Draw X-axis Labels
       rawData.forEach((d, i) => {
         const x = padding.left + (i / (rawData.length - 1)) * chartWidth;
         ctx.fillStyle = '#667085';
@@ -431,5 +604,4 @@ $missions = [
   });
 </script>
 
-<?php
-include "./layout/layoutclose.php";
+<?php include_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutclose.php'; ?>
