@@ -60,14 +60,14 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
 <div class="flex flex-col gap-6 mx-auto">
   <div class="grid z-100 grid-cols-1 gap-6 lg:grid-cols-3">
     <div class="lg:col-span-2 flex flex-col gap-6">
-      <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/components/aktivitas/catat-aksi.php'; ?>
-      <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/components/aktivitas/riwayat-aktivitas.php'; ?>
+      <?php require_once __DIR__ . '/component/aktivitas-catat-aksi.php'; ?>
+      <?php require_once __DIR__ . '/component/aktivitas-riwayat-aktivitas.php'; ?>
     </div>
 
     <div class="lg:col-span-1 flex flex-col gap-6">
-      <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/components/aktivitas/ringkasan-aktivitas.php'; ?>
-      <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/components/aktivitas/insight-minggu-ini.php'; ?>
-      <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/components/aktivitas/kategori-aktivitas.php'; ?>
+      <?php require_once __DIR__ . '/component/aktivitas-ringkasan-aktivitas.php'; ?>
+      <?php require_once __DIR__ . '/component/aktivitas-insight-minggu-ini.php'; ?>
+      <?php require_once __DIR__ . '/component/aktivitas-kategori-aktivitas.php'; ?>
     </div>
   </div>
 </div>
