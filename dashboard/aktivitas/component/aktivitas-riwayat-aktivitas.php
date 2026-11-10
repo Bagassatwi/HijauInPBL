@@ -33,7 +33,7 @@
     <?php else: ?>
       <?php foreach ($groupedActivities as $dateStr => $list): ?>
         <?php $totalPoint = array_sum(array_column($list, 'point')); ?>
-        <div class="activity-group">
+        <div class="activity-group" data-date="<?= date('Y-m-d', strtotime($dateStr)) ?>">
           <div class="flex justify-between mb-4">
             <span class="font-bold text-gray-700"><?= htmlspecialchars($dateStr) ?></span>
             <span class="flex items-center gap-1 font-bold">
@@ -81,5 +81,11 @@
         </div>
       <?php endforeach; ?>
     <?php endif; ?>
+
+    <div id="activityFilterEmpty" class="hidden flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 py-16">
+      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-[#EEF8F0] text-2xl">🍃</div>
+      <h3 class="mt-5 text-xl font-bold text-[#101828]">Belum Ada Aktivitas di Filter Ini</h3>
+      <p class="mt-2 text-center text-[#667085]">Coba pilih filter lain untuk melihat riwayat aktivitasmu.</p>
+    </div>
   </div>
 </div>

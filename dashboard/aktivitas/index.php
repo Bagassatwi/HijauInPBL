@@ -150,6 +150,65 @@ $totalCategoryActions = array_sum(array_column($categoryStats, 'count'));
       });
     });
 
+    const activityTabs = document.querySelectorAll(".tab-btn[data-tab]");
+    const activityGroups = document.querySelectorAll(".activity-group");
+    const activityFilterEmpty = document.getElementById("activityFilterEmpty");
+
+    function matchesActivityFilter(dateValue, filterType) {
+      if (!dateValue || filterType === "semua") {
+        return filterType === "semua";
+      }
+
+      const groupDate = new Date(dateValue + "T00:00:00");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (filterType === "hari") {
+        return groupDate.getTime() === today.getTime();
+      }
+
+      if (filterType === "minggu") {
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 6);
+        return groupDate >= weekAgo && groupDate <= today;
+      }
+
+      if (filterType === "bulan") {
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        return groupDate >= monthStart && groupDate <= monthEnd;
+      }
+
+      return true;
+    }
+
+    activityTabs.forEach(tab => {
+      tab.addEventListener("click", function() {
+        const selectedTab = this.dataset.tab;
+
+        activityTabs.forEach(btn => {
+          btn.classList.remove("active", "border-[#11773D]", "text-[#11773D]");
+          btn.classList.add("border-transparent", "text-gray-500");
+        });
+
+        this.classList.add("active", "border-[#11773D]", "text-[#11773D]");
+        this.classList.remove("border-transparent", "text-gray-500");
+
+        let visibleCount = 0;
+
+        activityGroups.forEach(group => {
+          const shouldShow = matchesActivityFilter(group.dataset.date, selectedTab);
+          group.style.display = shouldShow ? "" : "none";
+          if (shouldShow) visibleCount++;
+        });
+
+        if (activityFilterEmpty) {
+          activityFilterEmpty.classList.toggle("hidden", visibleCount > 0);
+          activityFilterEmpty.classList.toggle("flex", visibleCount === 0);
+        }
+      });
+    });
+
     if (form) {
       form.addEventListener("submit", async function(e) {
         e.preventDefault();
