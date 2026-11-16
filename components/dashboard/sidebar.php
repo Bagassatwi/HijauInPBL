@@ -29,8 +29,18 @@ if ($_SESSION['user']['is_super_admin']) {
       'name' => 'Articles',
       'path' => '/dashboard/articles',
       'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
-  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-  <circle cx="12" cy="7" r="4"/>
+  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+  <path d="M6.5 2H20v15H6.5A2.5 2.5 0 0 1 4 14.5v-10A2.5 2.5 0 0 1 6.5 2Z"/>
+  <path d="M8 6h8"/>
+  <path d="M8 10h8"/>
+</svg>'
+    ],
+    [
+      'name' => 'Categories',
+      'path' => '/dashboard/articles/categories',
+      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+  <path d="M3 7h7l2 3h9v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
+  <path d="M3 7V5a2 2 0 0 1 2-2h4l2 3"/>
 </svg>'
     ],
     [
