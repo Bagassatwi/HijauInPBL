@@ -60,6 +60,18 @@ $headerConfig = [
     'description' => 'Ikuti challenge seru dan raih poin serta badge spesial!',
     'src'         => '/assets/challange/main.png',
   ],
+  '/dashboard/leaderboard' => [
+    'title'       => 'Leaderboard 🏆',
+    'subtitle'    => null,
+    'description' => 'Lihat siapa yang paling aktif menjaga bumi dan mengumpulkan Eco Point.',
+    'src'         => '/assets/dashboard/main.png',
+  ],
+  '/admin/leaderboard' => [
+    'title'       => 'Leaderboard 🏆',
+    'subtitle'    => null,
+    'description' => 'Lihat siapa yang paling aktif menjaga bumi dan mengumpulkan Eco Point.',
+    'src'         => '/assets/dashboard/main.png',
+  ],
   '/admin/komunitas' => [
     'title'       => 'Komunitas 🌱',
     'subtitle'    => null,

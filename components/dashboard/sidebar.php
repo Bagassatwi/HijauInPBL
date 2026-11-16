@@ -32,6 +32,14 @@ if ($_SESSION['user']['is_super_admin']) {
   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
   <circle cx="12" cy="7" r="4"/>
 </svg>'
+    ],
+    [
+      'name' => 'Leaderboard',
+      'path' => '/dashboard/leaderboard',
+      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+      <path d="M8 21V7m8 14V3m-8 9h8"/>
+      <path d="M6 7h12"/>
+    </svg>'
     ]
   ];
 } else {
