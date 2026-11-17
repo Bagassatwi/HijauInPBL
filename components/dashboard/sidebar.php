@@ -1,25 +1,17 @@
 <?php
 session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/level.php';
-$levels = [
-  ['level' => 1, 'minXp' => 0, 'title' => 'Eco Beginner 🌱'],
-  ['level' => 2, 'minXp' => 100, 'title' => 'Eco Explorer 🍃'],
-  ['level' => 3, 'minXp' => 250, 'title' => 'Eco Guardian 🌿'],
-  ['level' => 4, 'minXp' => 450, 'title' => 'Nature Protector 🌳'],
-  ['level' => 5, 'minXp' => 700, 'title' => 'Earth Hero 🌍'],
-  ['level' => 6, 'minXp' => 1000, 'title' => 'Green Champion 🏆'],
-  ['level' => 7, 'minXp' => 1350, 'title' => 'Planet Savior ⭐'],
-];
+
 $userProfile = $_SESSION['user'] ?? [
   'id' => '',
   'full_name' => 'Tamu',
   'xp' => 0
 ];
+$levels = getLevelsFromDatabase();
 
 $pathname = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-// print_r($userProfile['level']);
 $levelInfo = getCurrentLevel((int) ($userProfile['xp'] ?? 0), $levels);
-$progress = getLevelProgress((int) ($userProfile['xp'] ?? 0));
+$progress = getLevelProgress((int) ($userProfile['xp'] ?? 0), $levels);
 
 $navItems = [];
 

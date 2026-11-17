@@ -2,6 +2,7 @@
 session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/level.php';
 
 $userId = $_SESSION['user']['id'] ?? null;
 if (!$userId) {
@@ -23,11 +24,14 @@ $fullName = $userProfile['full_name'] ?? ($_SESSION['user']['full_name'] ?? $_SE
 $avatarUrl = !empty($userProfile['avatar_url']) ? $userProfile['avatar_url'] : '/assets/avatar.png';
 $ecoScore = (int) ($userProfile['eco_score'] ?? 0);
 $xp = (int) ($userProfile['xp'] ?? 0);
-$level = (int) ($userProfile['level'] ?? 1);
+$levels = getLevelsFromDatabase();
+$levelInfo = getCurrentLevel($xp, $levels);
+$level = (int) ($userProfile['level'] ?? $levelInfo['level'] ?? 1);
 $streak = (int) ($userProfile['streak'] ?? 0);
 
-$levelLabel = 'Eco Guardian';
-$nextLevelXp = 1000;
+$levelLabel = $levelInfo['title'] ?? 'Eco Guardian';
+$progressInfo = getLevelProgress($xp, $levels);
+$nextLevelXp = max(1, (int) ($progressInfo['nextXp'] ?? 100));
 $xpProgressPercentage = min(100, round(($xp / max(1, $nextLevelXp)) * 100));
 
 $todayStatsStmt = $pdo->prepare("
