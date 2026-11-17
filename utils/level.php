@@ -27,6 +27,7 @@ function normalizeLevelEntry(array $level): array {
     'level' => max(1, $levelNumber),
     'minXp' => getLevelThreshold(max(1, $levelNumber)),
     'title' => (string) ($level['title'] ?? 'Eco Beginner 🌱'),
+    'photo' => $level['photo']
   ];
 }
 
@@ -38,7 +39,7 @@ function getLevelsFromDatabase(): array {
   }
 
   try {
-    $stmt = $pdo->query("SELECT level, min_xp, title FROM public.levels ORDER BY min_xp DESC");
+    $stmt = $pdo->query("SELECT level, min_xp, title, photo FROM public.levels ORDER BY min_xp DESC");
     $levels = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (empty($levels)) {
@@ -109,6 +110,7 @@ function getCurrentLevel(int $xp, array $levels): array {
   return [
     'level' => $currentLevelNumber,
     'title' => (string) ($currentLevel['title'] ?? 'Eco Beginner 🌱'),
+    'photo' => (string) $currentLevel['photo']
   ];
 }
 
