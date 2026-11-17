@@ -197,3 +197,5 @@ $podiumMeta = [
     </div>
   </section>
 </div>
+
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutclose.php';

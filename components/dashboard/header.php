@@ -28,25 +28,25 @@ $progressInfo = getLevelProgress($userXp, $levels);
 $progressPercent = min(100, max(0, (int) round(($userXp / max(1, $progressInfo['nextXp'])) * 100)));
 
 $headerConfig = [
-  '/admin' => [
+  '/dashboard' => [
     'title'       => "Halo, {$firstName}! 👋",
     'subtitle'    => 'Selamat datang kembali!',
     'description' => 'Teruslah beraksi, karena setiap langkah kecil <br /> berdampak besar bagi bumi kita. 🌱',
     'src'         => '/assets/dashboard/main.png',
   ],
-  '/admin/aktivitas' => [
+  '/dashboard/aktivitas' => [
     'title'       => 'Aktivitas 🌱',
     'subtitle'    => null,
     'description' => 'Catat dan lihat semua aksi hijau yang kamu lakukan.',
     'src'         => '/assets/aktivitas/m.png',
   ],
-  '/admin/ai-assistant' => [
+  '/dashboard/ai-assistant' => [
     'title'       => 'AI Assistant ✨',
     'subtitle'    => null,
     'description' => 'Asisten cerdasmu untuk hidup lebih hijau setiap hari.',
     'src'         => null,
   ],
-  '/admin/challenge' => [
+  '/dashboard/challenge' => [
     'title'       => 'Challenge 🌱',
     'subtitle'    => null,
     'description' => 'Ikuti challenge seru dan raih poin serta badge spesial!',
@@ -58,19 +58,19 @@ $headerConfig = [
     'description' => 'Lihat siapa yang paling aktif menjaga bumi dan mengumpulkan Eco Point.',
     'src'         => '/assets/dashboard/main.png',
   ],
-  '/admin/leaderboard' => [
+  '/dashboard/leaderboard' => [
     'title'       => 'Leaderboard 🏆',
     'subtitle'    => null,
     'description' => 'Lihat siapa yang paling aktif menjaga bumi dan mengumpulkan Eco Point.',
     'src'         => '/assets/dashboard/main.png',
   ],
-  '/admin/komunitas' => [
+  '/dashboard/komunitas' => [
     'title'       => 'Komunitas 🌱',
     'subtitle'    => null,
     'description' => 'Bersama komunitas, wujudkan bumi yang lebih hijau!',
     'src'         => '/assets/dashboard-komunitas/main.png',
   ],
-  '/admin/profil' => [
+  '/dashboard/profil' => [
     'title'       => 'Profil Saya 🌿',
     'subtitle'    => null,
     'description' => 'Kelola informasi profil dan pengaturan akun Anda.',
@@ -78,7 +78,7 @@ $headerConfig = [
   ],
 ];
 
-$currentConfig = $headerConfig[$pathname] ?? $headerConfig['/admin'];
+$currentConfig = $headerConfig[$pathname] ?? $headerConfig['/dashboard'];
 ?>
 
 <header class="rounded-3xl sticky top-0 bg-inherit flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-8 z-999" <?php if (!empty($currentConfig['src'])) ?> style="background-image: url(<?php echo htmlspecialchars($currentConfig['src']) ?>); background-size: 50%; background-repeat:no-repeat;background-position: center;">
