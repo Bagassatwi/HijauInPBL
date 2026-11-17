@@ -1,10 +1,31 @@
 <?php
 require_once($_SERVER['DOCUMENT_ROOT'] . "/utils/connection.php");
 
+function getLevelThreshold(int $level): int {
+  $safeLevel = max(1, $level);
+  return (int) (25 * ($safeLevel - 1) * ($safeLevel + 2));
+}
+
+function getGeneratedLevels(int $maxLevel = 7): array {
+  $levels = [];
+
+  for ($level = 1; $level <= $maxLevel; $level++) {
+    $levels[] = [
+      'level' => $level,
+      'minXp' => getLevelThreshold($level),
+      'title' => 'Eco Level ' . $level,
+    ];
+  }
+
+  return $levels;
+}
+
 function normalizeLevelEntry(array $level): array {
+  $levelNumber = (int) ($level['level'] ?? 1);
+
   return [
-    'level' => (int) ($level['level'] ?? 1),
-    'minXp' => (int) ($level['min_xp'] ?? $level['minXp'] ?? 0),
+    'level' => max(1, $levelNumber),
+    'minXp' => getLevelThreshold(max(1, $levelNumber)),
     'title' => (string) ($level['title'] ?? 'Eco Beginner 🌱'),
   ];
 }
@@ -13,7 +34,7 @@ function getLevelsFromDatabase(): array {
   global $pdo;
 
   if (!isset($pdo)) {
-    return [];
+    return getGeneratedLevels();
   }
 
   try {
@@ -21,48 +42,50 @@ function getLevelsFromDatabase(): array {
     $levels = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (empty($levels)) {
-      return [];
+      return getGeneratedLevels();
     }
 
     $normalizedLevels = [];
     foreach ($levels as $level) {
-      $normalizedLevels[] = normalizeLevelEntry($level);
+      $normalizedEntry = normalizeLevelEntry($level);
+      $normalizedLevels[] = $normalizedEntry;
     }
 
     usort($normalizedLevels, fn($a, $b) => (int) $a['minXp'] <=> (int) $b['minXp']);
 
     return $normalizedLevels;
   } catch (Throwable $th) {
-    return [];
+    return getGeneratedLevels();
   }
 }
 
 function calculateLevel(int $xp): int {
   $levels = getLevelsFromDatabase();
+  $maxLevel = max(1, (int) ($levels[array_key_last($levels)]['level'] ?? 7));
 
-  if (empty($levels)) {
-    return (int) floor($xp / 100) + 1;
-  }
-
-  $level = $levels[0];
+  $currentLevel = 1;
   foreach ($levels as $entry) {
     if ((int) $xp >= (int) $entry['minXp']) {
-      $level = $entry;
-    } else {
-      break;
+      $currentLevel = (int) ($entry['level'] ?? 1);
+      if ($currentLevel >= $maxLevel) {
+        break;
+      }
+      continue;
     }
+
+    break;
   }
 
-  return (int) ($level['level'] ?? 1);
+  return $currentLevel;
 }
 
 function getCurrentLevel(int $xp, array $levels): array {
-  $sortedLevels = $levels;
+  $sortedLevels = $levels ?: getLevelsFromDatabase();
   usort($sortedLevels, fn($a, $b) => (int) $a['minXp'] <=> (int) $b['minXp']);
 
   if (empty($sortedLevels)) {
     return [
-      'level' => max(1, (int) floor($xp / 100) + 1),
+      'level' => 1,
       'title' => 'Eco Beginner 🌱',
     ];
   }
@@ -77,8 +100,14 @@ function getCurrentLevel(int $xp, array $levels): array {
     break;
   }
 
+  $currentLevelNumber = (int) ($currentLevel['level'] ?? 1);
+  $maxLevel = (int) ($sortedLevels[array_key_last($sortedLevels)]['level'] ?? 7);
+  if ($currentLevelNumber > $maxLevel) {
+    $currentLevelNumber = $maxLevel;
+  }
+
   return [
-    'level' => (int) ($currentLevel['level'] ?? 1),
+    'level' => $currentLevelNumber,
     'title' => (string) ($currentLevel['title'] ?? 'Eco Beginner 🌱'),
   ];
 }
@@ -88,32 +117,37 @@ function getLevelProgress(int $xp, array $levels = []): array {
   usort($sortedLevels, fn($a, $b) => (int) $a['minXp'] <=> (int) $b['minXp']);
 
   if (empty($sortedLevels)) {
-    $nextXp = max(100, ((int) floor($xp / 100) + 1) * 100);
-    $progress = $xp <= 0 ? 0 : min(100, ($xp / $nextXp) * 100);
+    $sortedLevels = getGeneratedLevels();
+  }
 
+  $maxLevel = (int) ($sortedLevels[array_key_last($sortedLevels)]['level'] ?? 7);
+  $maxThreshold = getLevelThreshold($maxLevel);
+  $currentLevelInfo = getCurrentLevel($xp, $sortedLevels);
+  $currentLevel = (int) ($currentLevelInfo['level'] ?? 1);
+
+  if ($currentLevel >= $maxLevel && $xp >= $maxThreshold) {
     return [
-      'progress' => $progress,
+      'progress' => 100,
       'currentXp' => $xp,
-      'nextXp' => $nextXp,
+      'nextXp' => $maxThreshold,
+      'isMaxLevel' => true,
+      'progressLabel' => 'MAX',
     ];
   }
 
   $currentMinXp = 0;
-  $nextXp = $sortedLevels[0]['minXp'] ?? 0;
+  $nextXp = $maxThreshold;
 
   foreach ($sortedLevels as $index => $level) {
     if ((int) $xp >= (int) $level['minXp']) {
       $currentMinXp = (int) $level['minXp'];
-      $nextXp = (int) ($sortedLevels[$index + 1]['minXp'] ?? $currentMinXp + 100);
+      $nextLevel = $sortedLevels[$index + 1] ?? null;
+      $nextXp = $nextLevel ? (int) $nextLevel['minXp'] : $maxThreshold;
       continue;
     }
 
     $nextXp = (int) $level['minXp'];
     break;
-  }
-
-  if ($nextXp <= $currentMinXp) {
-    $nextXp = $currentMinXp + 100;
   }
 
   $progress = $currentMinXp >= $nextXp ? 100 : (($xp - $currentMinXp) / max(1, $nextXp - $currentMinXp)) * 100;
@@ -122,6 +156,8 @@ function getLevelProgress(int $xp, array $levels = []): array {
     'progress' => min(100, max(0, $progress)),
     'currentXp' => $xp,
     'nextXp' => $nextXp,
+    'isMaxLevel' => false,
+    'progressLabel' => (string) min(100, max(0, round($progress))) . '%',
   ];
 }
 

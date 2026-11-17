@@ -25,7 +25,8 @@ $firstName = explode(' ', trim($fullName))[0];
 $userXp = (int)($userProfile['xp'] ?? 0);
 $levelInfo = getCurrentLevel($userXp, $levels);
 $progressInfo = getLevelProgress($userXp, $levels);
-$progressPercent = min(100, max(0, (int) round(($userXp / max(1, $progressInfo['nextXp'])) * 100)));
+$progressPercent = $progressInfo['isMaxLevel'] ? 100 : min(100, max(0, (int) round(($userXp / max(1, $progressInfo['nextXp'])) * 100)));
+$progressText = $progressInfo['isMaxLevel'] ? 'MAX' : (string) $progressPercent . '%';
 
 $headerConfig = [
   '/dashboard' => [
@@ -226,7 +227,7 @@ $currentConfig = $headerConfig[$pathname] ?? $headerConfig['/dashboard'];
               LEVEL <?= htmlspecialchars((string) ($levelInfo['level'] ?? 1)) ?>
             </span>
             <span class="text-[12px] font-semibold text-[#11773D]">
-              <?= htmlspecialchars((string) $progressPercent) ?>%
+              <?= htmlspecialchars((string) $progressText) ?>
             </span>
           </div>
 
@@ -235,7 +236,11 @@ $currentConfig = $headerConfig[$pathname] ?? $headerConfig['/dashboard'];
           </div>
 
           <div class="text-[12px] font-medium text-gray-700">
-            <?= number_format($userXp, 0, ',', '.') ?> / <?= number_format($progressInfo['nextXp'], 0, ',', '.') ?> XP
+            <?php if ($progressInfo['isMaxLevel']): ?>
+              <?= number_format($userXp, 0, ',', '.') ?> XP
+            <?php else: ?>
+              <?= number_format($userXp, 0, ',', '.') ?> / <?= number_format($progressInfo['nextXp'], 0, ',', '.') ?> XP
+            <?php endif; ?>
           </div>
         </div>
 

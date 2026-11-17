@@ -175,12 +175,16 @@ if ($_SESSION['user']['is_super_admin']) {
     </div>
     <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1">
       <div class="bg-[#11773D] h-2.5 rounded-full transition-all duration-500"
-        style="width: <?= (float) $progress['progress'] ?>%"></div>
+        style="width: <?= (float) ($progress['isMaxLevel'] ? 100 : $progress['progress']) ?>%"></div>
     </div>
     <div class="flex justify-between text-base font-semibold text-gray-500">
       <span>Level <?= $userProfile['level'] ?></span>
       <span>
-        <?= (int) $progress['currentXp'] ?> / <?= (int) $progress['nextXp'] ?> XP
+        <?php if ($progress['isMaxLevel']): ?>
+          MAX • <?= (int) $progress['currentXp'] ?> XP
+        <?php else: ?>
+          <?= (int) $progress['currentXp'] ?> / <?= (int) $progress['nextXp'] ?> XP
+        <?php endif; ?>
       </span>
     </div>
   </div>

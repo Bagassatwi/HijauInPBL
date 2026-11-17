@@ -32,7 +32,7 @@ $streak = (int) ($userProfile['streak'] ?? 0);
 $levelLabel = $levelInfo['title'] ?? 'Eco Guardian';
 $progressInfo = getLevelProgress($xp, $levels);
 $nextLevelXp = max(1, (int) ($progressInfo['nextXp'] ?? 100));
-$xpProgressPercentage = min(100, round(($xp / max(1, $nextLevelXp)) * 100));
+$xpProgressPercentage = $progressInfo['isMaxLevel'] ? 100 : min(100, round(($xp / max(1, $nextLevelXp)) * 100));
 
 $todayStatsStmt = $pdo->prepare("
   SELECT
@@ -284,7 +284,13 @@ $usageText = $todayActionsCount > 0
             <div class="h-2.5 overflow-hidden rounded-full bg-[#DCE7DE]">
               <div class="h-full rounded-full bg-[#11773D]" style="width: <?= $xpProgressPercentage ?>%;"></div>
             </div>
-            <p class="mt-3 text-center text-[18px] font-semibold text-[#475467]"><?= number_format($xp, 0, ',', '.') ?> / <?= number_format($nextLevelXp, 0, ',', '.') ?> XP</p>
+            <p class="mt-3 text-center text-[18px] font-semibold text-[#475467]">
+              <?php if ($progressInfo['isMaxLevel']): ?>
+                MAX • <?= number_format($xp, 0, ',', '.') ?> XP
+              <?php else: ?>
+                <?= number_format($xp, 0, ',', '.') ?> / <?= number_format($nextLevelXp, 0, ',', '.') ?> XP
+              <?php endif; ?>
+            </p>
           </div>
         </div>
       </div>
