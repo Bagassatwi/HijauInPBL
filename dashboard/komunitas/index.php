@@ -76,7 +76,7 @@ $suggestions = [
         <div id="tab-beranda" class="tab-content flex flex-col gap-8">
           <div class="flex items-center gap-4">
             <div class="relative flex-1">
-              <input type="text" placeholder="Cari komunitas atau topik..." class="rounded-xl focus:border-[#11773D] w-full py-3 pl-10 pr-4 text-base font-semibold border border-gray-200 outline-none" />
+              <input id="berandaSearchInput" type="text" placeholder="Cari komunitas atau topik..." class="rounded-xl focus:border-[#11773D] w-full py-3 pl-10 pr-4 text-base font-semibold border border-gray-200 outline-none" />
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             </div>
             <button
@@ -103,7 +103,12 @@ $suggestions = [
               <div class="flex items-center gap-5 overflow-x-auto pb-2">
                 <?php foreach ($popularCommunities as $pop): ?>
                   <?php $isJoined = !empty($pop['id']) && isset($joinedCommunityLookup[(string) $pop['id']]); ?>
-                  <div class="max-w-56 w-full wrap-break-word shrink-0 rounded-[20px] grid grid-rows-[1fr_0.75fr_auto_auto] border border-[#EAECF0] bg-white px-5 py-6 text-center shadow-[0_2px_10px_rgba(16,24,40,0.04)] transition hover:shadow-md">
+                  <div
+                    class="community-card max-w-56 w-full wrap-break-word shrink-0 rounded-[20px] grid grid-rows-[1fr_0.75fr_auto_auto] border border-[#EAECF0] bg-white px-5 py-6 text-center shadow-[0_2px_10px_rgba(16,24,40,0.04)] transition hover:shadow-md"
+                    data-title="<?= htmlspecialchars(strtolower((string) ($pop['title'] ?? ''))) ?>"
+                    data-tag="<?= htmlspecialchars(strtolower((string) ($pop['tag'] ?? 'lingkungan'))) ?>"
+                    data-location="<?= htmlspecialchars(strtolower((string) ($pop['city'] ?? 'indonesia'))) ?>"
+                    data-search="<?= htmlspecialchars(strtolower((string) ($pop['title'] ?? '') . ' ' . ($pop['desc'] ?? '') . ' ' . ($pop['city'] ?? ''))) ?>">
                     <div class="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-[#EEF4EC]">
                       <img src="<?= htmlspecialchars($pop['image']) ?>" alt="<?= htmlspecialchars($pop['title']) ?>" class="w-20.5 h-20.5 object-contain" />
                     </div>
@@ -178,7 +183,7 @@ $suggestions = [
         <div id="tab-saya" class="tab-content hidden flex-col gap-8">
           <div class="flex items-center justify-between gap-6">
             <div class="relative flex-1">
-              <input placeholder="Cari komunitas saya..." class="h-13 w-full rounded-xl border border-[#D0D5DD] pl-10 pr-10 text-[15px] outline-none" />
+              <input id="myCommunitySearchInput" placeholder="Cari komunitas saya..." class="h-13 w-full rounded-xl border border-[#D0D5DD] pl-10 pr-10 text-[15px] outline-none" />
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             </div>
             <button
@@ -203,7 +208,11 @@ $suggestions = [
             <?php else: ?>
               <div class="flex flex-col gap-4">
                 <?php foreach ($myCommunitiesJoined as $item): ?>
-                  <div class="flex items-center justify-between border-b border-[#EAECF0] py-5">
+                  <div
+                    class="community-card flex items-center justify-between border-b border-[#EAECF0] py-5"
+                    data-search="<?= htmlspecialchars(strtolower((string) ($item['title'] ?? '') . ' ' . ($item['desc'] ?? '') . ' ' . ($item['city'] ?? ''))) ?>"
+                    data-title="<?= htmlspecialchars(strtolower((string) ($item['title'] ?? ''))) ?>"
+                    data-location="<?= htmlspecialchars(strtolower((string) ($item['city'] ?? 'indonesia'))) ?>">
                     <div class="flex flex-1 items-center gap-5">
                       <div class="flex h-18.5 w-18.5 items-center justify-center rounded-full bg-[#EEF4EC]">
                         <img src="<?= htmlspecialchars($item['image']) ?>" alt="" class="w-17 h-17 object-contain" />
@@ -240,15 +249,24 @@ $suggestions = [
 
         <!-- TAB CONTENT: TEMUKAN KOMUNITAS -->
         <div id="tab-temukan" class="tab-content hidden flex-col gap-8">
-          <p class="text-red-500 text-sm font-semibold mb-2">Fitur filter kategori dan lokasi sedang dalam tahap pengembangan (Coming Soon)</p>
           <div class="md:flex-row flex flex-col items-center gap-4">
-            <input type="text" placeholder="Cari komunitas..." disabled class="rounded-xl w-full py-3 pl-4 pr-4 text-base font-semibold border border-gray-200 bg-gray-50 text-gray-400 outline-none cursor-not-allowed" />
-            <button type="button" disabled class="md:w-auto rounded-xl flex items-center justify-between w-full gap-2 px-4 py-3 text-base font-semibold text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed">
-              Kategori ▼
-            </button>
-            <button type="button" disabled class="md:w-auto rounded-xl flex items-center justify-between w-full gap-2 px-4 py-3 text-base font-semibold text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed">
-              Lokasi ▼
-            </button>
+            <input id="discoverSearchInput" type="text" placeholder="Cari komunitas..." class="rounded-xl w-full py-3 pl-4 pr-4 text-base font-semibold border border-gray-200 bg-white text-gray-700 outline-none focus:border-[#11773D]" />
+            <select id="discoverCategoryFilter" class="md:w-auto rounded-xl flex items-center justify-between w-full gap-2 px-4 py-3 text-base font-semibold text-gray-700 bg-white border border-gray-200 focus:border-[#11773D] outline-none">
+              <option value="all">Semua Kategori</option>
+              <option value="lingkungan">Lingkungan</option>
+              <option value="sampah & daur ulang">Sampah & Daur Ulang</option>
+              <option value="energi & iklim">Energi & Iklim</option>
+              <option value="edukasi">Edukasi</option>
+              <option value="gaya hidup hijau">Gaya Hidup Hijau</option>
+            </select>
+            <select id="discoverLocationFilter" class="md:w-auto rounded-xl flex items-center justify-between w-full gap-2 px-4 py-3 text-base font-semibold text-gray-700 bg-white border border-gray-200 focus:border-[#11773D] outline-none">
+              <option value="all">Semua Lokasi</option>
+              <option value="malang">Malang</option>
+              <option value="surabaya">Surabaya</option>
+              <option value="bandung">Bandung</option>
+              <option value="jakarta">Jakarta</option>
+              <option value="indonesia">Indonesia</option>
+            </select>
           </div>
 
           <div>
@@ -276,7 +294,12 @@ $suggestions = [
               <div class="flex flex-col gap-4">
                 <?php foreach ($discoverCommunities as $disc): ?>
                   <?php $isJoined = !empty($disc['id']) && isset($joinedCommunityLookup[(string) $disc['id']]); ?>
-                  <div class="flex items-center justify-between rounded-[20px] border border-[#EAECF0] px-6 py-6">
+                  <div
+                    class="community-card flex items-center justify-between rounded-[20px] border border-[#EAECF0] px-6 py-6"
+                    data-search="<?= htmlspecialchars(strtolower((string) ($disc['title'] ?? '') . ' ' . ($disc['desc'] ?? '') . ' ' . ($disc['loc'] ?? '') . ' ' . ($disc['tag'] ?? ''))) ?>"
+                    data-title="<?= htmlspecialchars(strtolower((string) ($disc['title'] ?? ''))) ?>"
+                    data-tag="<?= htmlspecialchars(strtolower((string) ($disc['tag'] ?? 'lingkungan'))) ?>"
+                    data-location="<?= htmlspecialchars(strtolower((string) ($disc['loc'] ?? 'indonesia'))) ?>">
                     <div class="flex flex-1 items-center gap-6">
                       <div class="flex h-20.5 w-20.5 items-center justify-center rounded-full bg-[#EEF4EC]">
                         <img src="<?= htmlspecialchars($disc['image']) ?>" alt="" class="w-18.5 h-18.5 object-contain" />
@@ -498,6 +521,45 @@ $suggestions = [
         });
       });
     });
+
+    function applyCommunitySearchFilter(searchInput, selector, categoryFilter = null, locationFilter = null) {
+      const searchValue = (searchInput?.value || "").trim().toLowerCase();
+      const selectedCategory = (categoryFilter?.value || "all").toLowerCase();
+      const selectedLocation = (locationFilter?.value || "all").toLowerCase();
+
+      document.querySelectorAll(selector).forEach(card => {
+        const cardSearch = (card.dataset.search || "").toLowerCase();
+        const cardTag = (card.dataset.tag || "").toLowerCase();
+        const cardLocation = (card.dataset.location || "").toLowerCase();
+
+        const matchesSearch = !searchValue || cardSearch.includes(searchValue);
+        const matchesCategory = selectedCategory === "all" || cardTag === selectedCategory;
+        const matchesLocation = selectedLocation === "all" || cardLocation === selectedLocation;
+
+        card.style.display = matchesSearch && matchesCategory && matchesLocation ? "" : "none";
+      });
+    }
+
+    const berandaSearchInput = document.getElementById("berandaSearchInput");
+    const myCommunitySearchInput = document.getElementById("myCommunitySearchInput");
+    const discoverSearchInput = document.getElementById("discoverSearchInput");
+    const discoverCategoryFilter = document.getElementById("discoverCategoryFilter");
+    const discoverLocationFilter = document.getElementById("discoverLocationFilter");
+
+    if (berandaSearchInput) {
+      berandaSearchInput.addEventListener("input", () => applyCommunitySearchFilter(berandaSearchInput, ".community-card"));
+    }
+
+    if (myCommunitySearchInput) {
+      myCommunitySearchInput.addEventListener("input", () => applyCommunitySearchFilter(myCommunitySearchInput, ".community-card"));
+    }
+
+    if (discoverSearchInput) {
+      const discoverFilterHandler = () => applyCommunitySearchFilter(discoverSearchInput, ".community-card", discoverCategoryFilter, discoverLocationFilter);
+      discoverSearchInput.addEventListener("input", discoverFilterHandler);
+      discoverCategoryFilter?.addEventListener("change", discoverFilterHandler);
+      discoverLocationFilter?.addEventListener("change", discoverFilterHandler);
+    }
 
     const createModal = document.getElementById("createCommunityModal");
     const openCreateBtn = document.getElementById("openCreateCommunityModalBtn");
