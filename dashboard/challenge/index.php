@@ -47,6 +47,7 @@ $formatIndoDate = function (?string $dateString): string {
   if (empty($dateString)) {
     return 'Belum ada tanggal';
   }
+  global $monthMap;
 
   $date = new DateTimeImmutable($dateString);
   $formatted = $date->format('d F Y');
