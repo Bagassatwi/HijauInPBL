@@ -9,6 +9,7 @@ function formatCommunityRow(array $community): array {
     'members' => number_format((int) ($community['member_count'] ?? $community['joined_members'] ?? 0), 0, ',', '.'),
     'desc' => $community['description'] ?: ($community['caption'] ?: 'Komunitas ramah lingkungan.'),
     'city' => $community['city'] ?? 'Indonesia',
+    'loc' => $community['city'] ?? 'Indonesia',
     'tag' => !empty($community['tags']) && is_array($community['tags']) ? $community['tags'][0] : 'Lingkungan',
     'tagColor' => 'bg-[#E8F5E9] text-[#11773D]',
     'date' => $community['created_at'] ? date('d M Y', strtotime($community['created_at'])) : 'Baru dibuat',
