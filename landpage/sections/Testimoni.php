@@ -1,27 +1,8 @@
 <?php
-$activities = [
-    [
-        "img" => "/assets/beranda/bersihpantai.png",
-        "badge" => "Bersih Bersama",
-        "title" => "Bersih Pantai Anyer",
-        "peserta" => "129 peserta",
-        "date" => "12 Mei 2024",
-    ],
-    [
-        "img" => "/assets/beranda/tanampohon.png",
-        "badge" => "Tanam Hijau",
-        "title" => "Tanam Pohon Mangrove",
-        "peserta" => "85 peserta",
-        "date" => "10 Mei 2024",
-    ],
-    [
-        "img" => "/assets/beranda/workshop.png",
-        "badge" => "Daur Ulang",
-        "title" => "Workshop Daur Ulang",
-        "peserta" => "96 peserta",
-        "date" => "08 Mei 2024",
-    ],
-];
+require_once __DIR__ . '/../includes/home-data.php';
+
+$landingData = hijauin_get_home_data();
+$activities = $landingData['activities'];
 
 $testimonies = [
     [
