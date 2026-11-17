@@ -1,4 +1,13 @@
 -- 1. Tables without foreign keys
+create table public.levels (
+  id uuid not null default gen_random_uuid(),
+  level bigint not null,
+  min_xp bigint not null,
+  title text not null,
+  created_at timestamp with time zone not null default now(),
+  constraint levels_pkey primary key (id)
+) TABLESPACE pg_default;
+
 create table public.article_category (
   id uuid not null default gen_random_uuid (),
   name text not null,

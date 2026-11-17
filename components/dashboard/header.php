@@ -6,15 +6,7 @@ $userProfile = $_SESSION['user'] ?? [
   'full_name' => 'Tamu',
   'xp'        => 0
 ];
-$levels = [
-  ['level' => 1, 'minXp' => 0,    'title' => 'Eco Beginner 🌱'],
-  ['level' => 2, 'minXp' => 100,  'title' => 'Eco Explorer 🍃'],
-  ['level' => 3, 'minXp' => 250,  'title' => 'Eco Guardian 🌿'],
-  ['level' => 4, 'minXp' => 450,  'title' => 'Nature Protector 🌳'],
-  ['level' => 5, 'minXp' => 700,  'title' => 'Earth Hero 🌍'],
-  ['level' => 6, 'minXp' => 1000, 'title' => 'Green Champion 🏆'],
-  ['level' => 7, 'minXp' => 1350, 'title' => 'Planet Savior ⭐'],
-];
+$levels = getLevelsFromDatabase();
 
 $notifications ??= [];
 $unreadNotifications = array_values(array_filter($notifications, function ($notification) {
@@ -32,7 +24,7 @@ $fullName = $userProfile['full_name'] ?? 'Tamu';
 $firstName = explode(' ', trim($fullName))[0];
 $userXp = (int)($userProfile['xp'] ?? 0);
 $levelInfo = getCurrentLevel($userXp, $levels);
-$progressInfo = getLevelProgress($userXp);
+$progressInfo = getLevelProgress($userXp, $levels);
 $progressPercent = min(100, max(0, (int) round(($userXp / max(1, $progressInfo['nextXp'])) * 100)));
 
 $headerConfig = [

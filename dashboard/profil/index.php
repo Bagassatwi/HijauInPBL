@@ -2,6 +2,7 @@
 session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/level.php';
 
 $userId = $_SESSION['user']['id'] ?? null;
 if (!$userId) {
@@ -26,10 +27,13 @@ $createdAt  = $_SESSION['user']['created_at'] ?? $userProfile['created_at'] ?? d
 $joinedDate = date('d M Y', strtotime($createdAt));
 
 $xp     = (int)($userProfile['xp'] ?? $_SESSION['user']['xp'] ?? 760);
-$level  = (int)($userProfile['level'] ?? 12);
+$levels = getLevelsFromDatabase();
+$levelInfo = getCurrentLevel($xp, $levels);
+$level  = (int)($userProfile['level'] ?? $levelInfo['level'] ?? 1);
 $streak = (int)($userProfile['streak'] ?? 0);
 
-$nextLevelXp = 1000;
+$progressInfo = getLevelProgress($xp, $levels);
+$nextLevelXp = max(1, (int)($progressInfo['nextXp'] ?? 100));
 $xpProgressPercentage = min(100, round(($xp / $nextLevelXp) * 100));
 $xpNeeded = max(0, $nextLevelXp - $xp);
 
