@@ -20,6 +20,17 @@ function fetchArticleCategories(): array {
   }
 }
 
+function fetchArticles(): array {
+  global $pdo;
+
+  try {
+    $stmt = $pdo->query('SELECT a.id, a.title, a.slug, a.thumbnail, a.summary, a.content, a.author, a.read_time, a.created_at, c.name AS category_name, c.icon AS category_icon FROM public.articles a LEFT JOIN public.article_category c ON c.id = a.article_category_id ORDER BY a.created_at DESC');
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+  } catch (Throwable $e) {
+    return [];
+  }
+}
+
 function createArticleCategory(array $data): array {
   global $pdo;
 
