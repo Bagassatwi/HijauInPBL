@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/level.php';
 
 $userId = $_SESSION['user']['id'] ?? null;
 if (!$userId) {
@@ -79,16 +80,14 @@ $bio = !empty($userProfile['bio']) ? $userProfile['bio'] : 'Berusaha menjadi ver
 $createdAt = $_SESSION['user']['created_at'] ?? $userProfile['created_at'] ?? date('Y-m-d');
 $joinedDate = date('d M Y', strtotime($createdAt));
 
-$xp = (int)($userProfile['xp'] ?? $_SESSION['user']['xp'] ?? 0);
-$level = (int)($userProfile['level'] ?? $_SESSION['user']['level'] ?? 1);
-$streak = (int)($userProfile['streak'] ?? $_SESSION['user']['streak'] ?? 0);
+$xp     = (int)($userProfile['xp'] ?? $_SESSION['user']['xp'] ?? 760);
+$levels = getLevelsFromDatabase();
+$levelInfo = getCurrentLevel($xp, $levels);
+$level  = (int)($userProfile['level'] ?? $levelInfo['level'] ?? 1);
+$streak = (int)($userProfile['streak'] ?? 0);
 
-$totalPointsStmt = $pdo->prepare("SELECT COALESCE(SUM(point), 0) FROM public.eco_actions WHERE user_id = :user_id");
-$totalPointsStmt->execute([':user_id' => $userId]);
-$pointsTotal = (int)$totalPointsStmt->fetchColumn();
-$xp = max($xp, $pointsTotal);
-
-$nextLevelXp = max(1000, 1000 + (($level - 1) * 250));
+$progressInfo = getLevelProgress($xp, $levels);
+$nextLevelXp = max(1, (int)($progressInfo['nextXp'] ?? 100));
 $xpProgressPercentage = min(100, round(($xp / $nextLevelXp) * 100));
 $xpNeeded = max(0, $nextLevelXp - $xp);
 

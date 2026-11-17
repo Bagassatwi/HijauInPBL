@@ -63,7 +63,7 @@ try {
   ];
 
   // Call Gemini 2.5 Flash REST Endpoint
-  $apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
+  $apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/" . getenv("MODEL") . ":generateContent?key=" . $apiKey;
 
   $ch = curl_init($apiUrl);
   curl_setopt_array($ch, [
