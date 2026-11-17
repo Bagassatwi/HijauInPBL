@@ -88,7 +88,7 @@ $streak = (int)($userProfile['streak'] ?? 0);
 
 $progressInfo = getLevelProgress($xp, $levels);
 $nextLevelXp = max(1, (int)($progressInfo['nextXp'] ?? 100));
-$xpProgressPercentage = min(100, round(($xp / $nextLevelXp) * 100));
+$xpProgressPercentage = $progressInfo['isMaxLevel'] ? 100 : min(100, round(($xp / $nextLevelXp) * 100));
 $xpNeeded = max(0, $nextLevelXp - $xp);
 
 $challengeStmt = $pdo->prepare("SELECT COUNT(*) FROM public.user_challenges WHERE user_id = :user_id AND status IN ('completed', 'complete', 'finished')");
@@ -295,12 +295,22 @@ $recentActivities = $recentActivitiesStmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <div class="mb-8 flex justify-end">
-          <span class="text-[18px] font-semibold text-[#344054]"><?= $xp ?> / <?= $nextLevelXp ?> XP</span>
+          <span class="text-[18px] font-semibold text-[#344054]">
+            <?php if ($progressInfo['isMaxLevel']): ?>
+              <?= $xp ?> XP • MAX
+            <?php else: ?>
+              <?= $xp ?> / <?= $nextLevelXp ?> XP
+            <?php endif; ?>
+          </span>
         </div>
 
         <div class="flex items-end justify-between">
           <p class="text-[18px] font-medium text-[#344054]">
-            <?= $xpNeeded ?> XP lagi untuk naik level!
+            <?php if ($progressInfo['isMaxLevel']): ?>
+              Kamu sudah sampai level maksimum!
+            <?php else: ?>
+              <?= $xpNeeded ?> XP lagi untuk naik level!
+            <?php endif; ?>
           </p>
         </div>
       </div>
