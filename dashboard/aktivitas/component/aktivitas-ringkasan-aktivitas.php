@@ -10,7 +10,7 @@
     <div class="pr-8">
       <p class="text-[16px] font-semibold text-[#667085]">Total Poin</p>
       <div class="mt-4 flex items-center gap-2">
-        <h2 class="text-[52px] font-bold leading-none text-[#11773D]"><?= $userXp ?></h2>
+        <h2 class="text-[52px] font-bold leading-none text-[#11773D]"><?= (int) $userXp ?></h2>
         <span class="text-[28px] text-[#11773D]">🍃</span>
       </div>
       <p class="mt-5 text-[16px] font-medium text-[#667085]">Dari <?= count($activities) ?> aksi</p>
@@ -26,7 +26,6 @@
         </svg>
         <div class="absolute inset-0 flex flex-col items-center justify-center">
           <span class="text-[30px] font-bold text-[#11773D]"><?= $targetPercentage ?>%</span>
-          <span class="text-[20px] text-[#11773D]">🍃</span>
         </div>
       </div>
       <p class="mt-4 text-center text-[16px] font-semibold text-[#667085]">dari target harian</p>

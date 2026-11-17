@@ -1,8 +1,7 @@
 <div class="rounded-[24px] bg-white p-7 shadow-sm">
-  <div class="mb-8 flex items-center justify-between">
+  <div class="mb-8 flex items-center justify-between gap-3">
     <h3 class="text-[22px] font-semibold text-[#101828]">Kategori Aktivitas</h3>
-    <p class="text-red-500 text-sm font-semibold mb-2">Fitur filter kategori dan tanggal sedang dalam tahap pengembangan (Coming Soon)</p>
-    <button type="button" class="text-[17px] cursor-not-allowed font-semibold text-[#11773D]">Lihat Semua</button>
+    <button type="button" class="text-[17px] font-semibold text-[#11773D]" data-open-category-modal="true">Lihat Semua</button>
   </div>
 
   <div class="space-y-7">
@@ -33,3 +32,19 @@
     <?php endforeach; ?>
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const openCategoryModalButtons = document.querySelectorAll("[data-open-category-modal]");
+    const categoryFilterModal = document.getElementById("categoryFilterModal");
+
+    openCategoryModalButtons.forEach((button) => {
+      button.addEventListener("click", function() {
+        if (categoryFilterModal) {
+          categoryFilterModal.classList.remove("hidden");
+          categoryFilterModal.classList.add("flex");
+        }
+      });
+    });
+  });
+</script>

@@ -1,11 +1,11 @@
-<div id="createModal" class="hidden fixed inset-0 z-[999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
+<dialog id="createModal" class="m-auto w-[min(90vw,72rem)] rounded-[32px] border-0 bg-transparent p-0 backdrop:bg-black/40">
   <div class="w-full max-w-6xl h-[90vh] overflow-hidden rounded-[32px] bg-white shadow-2xl flex flex-col">
     <div class="flex items-center justify-between border-b border-gray-100 px-8 py-6">
       <div>
         <h2 class="text-2xl font-bold text-gray-900">Catat Aktivitas Baru</h2>
         <p class="mt-1 text-gray-500">Tambahkan aktivitas ramah lingkungan yang telah kamu lakukan.</p>
       </div>
-      <button id="closeModalBtn" type="button" class="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-100">✕</button>
+      <button id="closeModalBtn" type="button" onclick="this.closest('dialog')?.close()" class="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-100">✕</button>
     </div>
 
     <div class="grid flex-1 grid-cols-12 overflow-hidden">
@@ -113,7 +113,7 @@
         </div>
 
         <div class="flex items-center justify-end gap-4 pt-2">
-          <button id="cancelModalBtn" type="button" class="h-[56px] rounded-2xl border border-gray-200 px-8 font-semibold text-gray-600 hover:bg-gray-100">Batal</button>
+          <button id="cancelModalBtn" type="button" onclick="this.closest('dialog')?.close()" class="h-[56px] rounded-2xl border border-gray-200 px-8 font-semibold text-gray-600 hover:bg-gray-100">Batal</button>
           <button type="submit" id="submitBtn" class="flex h-[56px] min-w-[210px] items-center justify-center rounded-2xl bg-[#11773D] px-8 font-semibold text-white hover:bg-[#0E6634]">
             Simpan Aktivitas
           </button>
@@ -121,4 +121,4 @@
       </form>
     </div>
   </div>
-</div>
+</dialog>

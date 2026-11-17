@@ -10,36 +10,36 @@ function getAllActivities(PDO $pdo, string $userId): array {
             c.color AS category_color,
             c.icon AS category_icon
         FROM public.eco_actions e
-        LEFT JOIN public.categories c ON e.category_id = c.id
+        JOIN public.categories c ON e.category_id = c.id
         WHERE e.user_id = :user_id
         ORDER BY e.activity_date DESC
     ");
   $stmt->execute([':user_id' => $userId]);
   $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-  return array_map(function ($row) {
-    return [
-      'id' => $row['id'],
-      'user_id' => $row['user_id'],
-      'category_id' => $row['category_id'],
-      'title' => $row['title'],
-      'description' => $row['description'],
-      'point' => (int)$row['point'],
-      'verification_type' => $row['verification_type'],
-      'status' => $row['status'],
-      'activity_date' => $row['activity_date'],
-      'co2_saved' => (float)($row['co2_saved'] ?? 0),
-      'water_saved' => (float)($row['water_saved'] ?? 0),
-      'energy_saved' => (float)($row['energy_saved'] ?? 0),
-      'category' => $row['cat_id'] ? [
-        'id' => $row['cat_id'],
-        'name' => $row['category_name'],
-        'color' => $row['category_color'],
-        'icon' => $row['category_icon'],
-      ] : null,
-      'category_name' => $row['category_name'] ?? 'Kebiasaan'
-    ];
-  }, $results);
+  return array_map(fn($row) => [
+    'id' => $row['id'],
+    'user_id' => $row['user_id'],
+    'category_id' => $row['category_id'],
+    'title' => $row['title'],
+    'description' => $row['description'],
+    'point' => (int) $row['point'],
+    'verification_type' => $row['verification_type'],
+    'status' => $row['status'],
+    'photo_url' => $row['photo_url'],
+    'image_url' => $row['image_url'],
+    'activity_date' => $row['activity_date'],
+    'co2_saved' => (float) ($row['co2_saved'] ?? 0),
+    'water_saved' => (float) ($row['water_saved'] ?? 0),
+    'energy_saved' => (float) ($row['energy_saved'] ?? 0),
+    'category' => $row['cat_id'] ? [
+      'id' => $row['cat_id'],
+      'name' => $row['category_name'],
+      'color' => $row['category_color'],
+      'icon' => $row['category_icon'],
+    ] : NULL,
+    'category_name' => $row['category_name'] ?? 'Kebiasaan'
+  ], $results);
 }
 
 function getActivityById(PDO $pdo, string $id): ?array {
@@ -104,6 +104,39 @@ function deleteActivity(PDO $pdo, string $id): bool {
 function getCategories(PDO $pdo): array {
   $stmt = $pdo->query("SELECT * FROM public.categories ORDER BY created_at ASC");
   return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getUserXp(PDO $pdo, string $userId): int {
+  $stmt = $pdo->prepare("SELECT xp FROM public.profiles WHERE id = :user_id LIMIT 1");
+  $stmt->execute([':user_id' => $userId]);
+  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+  return (int)($row['xp'] ?? 0);
+}
+
+function getWeeklyActivityInsight(PDO $pdo, string $userId): array {
+  $stmt = $pdo->prepare("
+    SELECT
+      COALESCE(SUM(CASE WHEN activity_date >= NOW() - INTERVAL '6 days' THEN COALESCE(co2_saved, 0) ELSE 0 END), 0) AS co2_saved,
+      COALESCE(SUM(CASE WHEN activity_date >= NOW() - INTERVAL '6 days' THEN COALESCE(water_saved, 0) ELSE 0 END), 0) AS water_saved,
+      COALESCE(SUM(CASE WHEN activity_date >= NOW() - INTERVAL '6 days' THEN COALESCE(energy_saved, 0) ELSE 0 END), 0) AS energy_saved,
+      COUNT(*) AS action_count,
+      COALESCE(SUM(CASE WHEN LOWER(title) LIKE '%menanam pohon%' THEN 1 ELSE 0 END), 0) AS trees_planted
+    FROM public.eco_actions
+    WHERE user_id = :user_id
+      AND activity_date >= NOW() - INTERVAL '6 days'
+  ");
+
+  $stmt->execute([':user_id' => $userId]);
+  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+  return [
+    'co2_saved' => (float)($row['co2_saved'] ?? 0),
+    'water_saved' => (float)($row['water_saved'] ?? 0),
+    'energy_saved' => (float)($row['energy_saved'] ?? 0),
+    'action_count' => (int)($row['action_count'] ?? 0),
+    'trees_planted' => (int)($row['trees_planted'] ?? 0),
+  ];
 }
 
 function rewardUser(PDO $pdo, string $userId, int $points): bool {

@@ -2,13 +2,15 @@
   <div class="lg:flex-row lg:items-center flex flex-col items-start justify-between gap-4 mb-6">
     <h3 class="text-xl font-bold text-[#0B0F1F]">Riwayat Aktivitas</h3>
     <div class="lg:w-auto flex items-center w-full gap-3">
-      <p class="text-red-500 text-sm font-semibold mb-2">Fitur filter kategori dan tanggal sedang dalam tahap pengembangan (Coming Soon)</p>
-      <button type="button" class="cursor-not-allowed lg:flex-none rounded-xl flex items-center justify-between flex-1 gap-2 px-4 py-2 text-base font-semibold text-gray-700 bg-white border border-gray-200">
-        🔍 Semua Kategori ▼
+      <button id="categoryFilterBtn" type="button" onclick="document.getElementById('categoryFilterModal')?.showModal && document.getElementById('categoryFilterModal').showModal()" class="lg:flex-none rounded-xl flex items-center justify-between flex-1 gap-2 px-4 py-2 text-base font-semibold text-gray-700 bg-white border border-gray-200 hover:border-[#11773D] hover:bg-[#F2FAF4]">
+        <span class="flex items-center gap-2">🔍 <span id="selectedCategoryLabel">Semua Kategori</span></span>
+        <span>▼</span>
       </button>
-      <button type="button" class="cursor-not-allowed lg:flex-none rounded-xl flex items-center justify-between flex-1 gap-2 px-4 py-2 text-base font-semibold text-gray-700 bg-white border border-gray-200">
-        📅 Pilih Tanggal ▼
+      <button id="dateFilterBtn" type="button" class="lg:flex-none rounded-xl flex items-center justify-between flex-1 gap-2 px-4 py-2 text-base font-semibold text-gray-700 bg-white border border-gray-200 hover:border-[#11773D] hover:bg-[#F2FAF4]">
+        <span class="flex items-center gap-2">📅 <span id="selectedDateLabel">Semua Tanggal</span></span>
+        <span>▼</span>
       </button>
+      <input id="dateFilterInput" type="date" class="hidden" />
     </div>
   </div>
 
@@ -47,8 +49,14 @@
               $catName = $act['category_name'] ?? 'Kebiasaan';
               $badge = $badgeColorMap[$catName] ?? ['bg' => 'bg-[#EEF8F0]', 'text' => 'text-[#11773D]'];
               $imgSrc = $activityImageMap[$act['title']] ?? '/assets/tumbler.png';
+              $activityJson = json_encode($act, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
               ?>
-              <div class="rounded-2xl hover:shadow-md flex items-center justify-between border border-gray-100 p-4 transition-shadow">
+              <button
+                type="button"
+                class="activity-item w-full rounded-2xl border border-gray-100 p-4 text-left transition-shadow hover:shadow-md"
+                data-activity='<?= htmlspecialchars($activityJson, ENT_QUOTES, 'UTF-8') ?>'
+                data-category="<?= htmlspecialchars($catName) ?>"
+                data-date="<?= date('Y-m-d', strtotime($act['activity_date'])) ?>">
                 <div class="flex w-full items-center justify-between py-2">
                   <div class="flex items-center gap-4">
                     <div class="flex h-14 w-14 items-center justify-center rounded-full <?= $badge['bg'] ?>">
@@ -75,7 +83,7 @@
                     <span class="text-[#98A2B3]">➔</span>
                   </div>
                 </div>
-              </div>
+              </button>
             <?php endforeach; ?>
           </div>
         </div>
