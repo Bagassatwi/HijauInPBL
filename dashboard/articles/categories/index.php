@@ -84,3 +84,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
   </section>
 </div>
+
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutclose.php';
