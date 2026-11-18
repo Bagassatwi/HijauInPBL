@@ -2,11 +2,22 @@
 session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/services/challenge/challenge.php';
 
 $userId = $_SESSION['user']['id'] ?? null;
 if (!$userId) {
   header('Location: /login.php');
   exit;
+}
+
+try {
+  $pdo->beginTransaction();
+  syncChallengeProgress($pdo, (string)$userId);
+  $pdo->commit();
+} catch (Throwable $e) {
+  if ($pdo->inTransaction()) {
+    $pdo->rollBack();
+  }
 }
 
 $tagColorMap = [
@@ -106,6 +117,9 @@ foreach ($challengeRows as $row) {
   $percent = min(100, (int) round(($progress / max(1, $target)) * 100));
 
   $allChallengeItem = [
+    'challengeId' => (string) ($row['challenge_id'] ?? ''),
+    'joined' => $status !== '',
+    'status' => $status,
     'image' => $image,
     'title' => $title,
     'tag' => $tag,
@@ -123,6 +137,7 @@ foreach ($challengeRows as $row) {
 
   if ($status === 'active') {
     $activeChallenges[] = [
+      'challengeId' => (string) ($row['challenge_id'] ?? ''),
       'image' => $image,
       'title' => $title,
       'desc' => $description,
@@ -151,26 +166,14 @@ foreach ($challengeRows as $row) {
 }
 
 if (empty($activeChallenges) && !empty($allChallenges)) {
-  $activeChallenges = array_slice($allChallenges, 0, 5);
-  foreach ($activeChallenges as $index => $item) {
-    $activeChallenges[$index]['progress'] = min((int) $item['current'], (int) $item['total']) . ' / ' . $item['total'] . ' Hari';
-    $activeChallenges[$index]['percent'] = str_replace('%', '', $item['percent']) . '%';
-    $activeChallenges[$index]['point'] = (string) $item['point'];
-    $activeChallenges[$index]['currentCount'] = $item['current'];
-    $activeChallenges[$index]['totalDays'] = $item['total'];
-    $activeChallenges[$index]['pointLabel'] = $item['point'] . ' Eco Point';
-    $activeChallenges[$index]['badge'] = $item['badge'] ?? 'Eco Warrior';
-    $activeChallenges[$index]['badgeImage'] = $item['badgeImage'] ?? '/assets/challange/ecowarrior.png';
-  }
+  $activeChallenges = [];
 }
 
 if (empty($completedChallenges) && !empty($allChallenges)) {
-  $completedChallenges = array_filter($allChallenges, function ($item) {
-    return (int) $item['current'] >= (int) $item['total'];
-  });
+  $completedChallenges = [];
 }
 
-$featuredChallenge = $activeChallenges[0] ?? $allChallenges[0] ?? null;
+$featuredChallenge = $activeChallenges[0] ?? null;
 
 $weeklyChartStmt = $pdo->prepare("
   WITH last7 AS (
@@ -275,6 +278,36 @@ $userBadgeCount = count($userBadges);
 
 <script>
   document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".join-challenge-btn").forEach(button => {
+      button.addEventListener("click", async function() {
+        const originalText = this.textContent;
+        this.disabled = true;
+        this.textContent = "Menyimpan...";
+
+        const formData = new FormData();
+        formData.set("challenge_id", this.dataset.challengeId || "");
+
+        try {
+          const response = await fetch("/dashboard/actions/challenge/join_challenge.php", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await response.json();
+
+          if (data.status === "success") {
+            window.location.reload();
+          } else {
+            alert(data.message || "Gagal mengikuti challenge.");
+          }
+        } catch (error) {
+          alert("Terjadi kesalahan sistem.");
+        } finally {
+          this.disabled = false;
+          this.textContent = originalText;
+        }
+      });
+    });
+
     const tabBtns = document.querySelectorAll(".tab-btn");
     const tabContents = document.querySelectorAll(".tab-content");
 

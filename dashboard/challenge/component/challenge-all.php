@@ -50,7 +50,15 @@
           </div>
         </div>
 
-        <button class="ml-8 text-[#98A2B3]">➔</button>
+        <?php if (($item['status'] ?? '') === 'active'): ?>
+          <span class="ml-8 rounded-full bg-[#EEF8F0] px-4 py-2 text-sm font-semibold text-[#11773D]">Aktif</span>
+        <?php elseif (($item['status'] ?? '') === 'completed'): ?>
+          <span class="ml-8 rounded-full bg-[#F2F4F7] px-4 py-2 text-sm font-semibold text-[#475467]">Selesai</span>
+        <?php else: ?>
+          <button type="button" class="join-challenge-btn ml-8 min-w-[110px] rounded-xl bg-[#11773D] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0E6634]" data-challenge-id="<?= htmlspecialchars($item['challengeId']) ?>">
+            Ikuti
+          </button>
+        <?php endif; ?>
       </div>
     <?php endforeach; ?>
   </div>

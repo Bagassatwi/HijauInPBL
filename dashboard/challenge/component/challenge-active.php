@@ -47,6 +47,12 @@
       </button>
     </div>
     <div class="flex flex-col gap-4">
+      <?php if (empty($activeChallenges)): ?>
+        <div class="rounded-[20px] border border-dashed border-[#D7E8DC] bg-[#F8FBF8] px-6 py-8 text-center">
+          <p class="text-[18px] font-semibold text-[#344054]">Belum ada challenge aktif</p>
+          <p class="mt-2 text-[15px] text-[#667085]">Pilih challenge dari tab <span class="font-semibold text-[#11773D]">Semua Challenge</span> untuk memulai.</p>
+        </div>
+      <?php endif; ?>
       <?php foreach ($activeChallenges as $item): ?>
         <div class="group flex items-center justify-between border-b border-[#EAECF0] py-5 transition">
           <div class="flex flex-1 items-center gap-5">
