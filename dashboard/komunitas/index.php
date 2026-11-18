@@ -24,11 +24,15 @@ if (empty($weeklyChartData)) {
 
 $popularCommunities = fetchPopularCommunities(5);
 $posts = fetchCommunityPosts();
-$myCommunitiesJoined = fetchJoinedCommunitiesByUser($userId);
-
-$myCommunitiesCreated = [
-  ['image' => '/assets/dashboard-komunitas/bike.png', 'title' => 'Go Green', 'desc' => 'Gaya hidup hijau, pilihan bijak untuk bumi yang lebih baik.', 'date' => 'Dibuat pada 10 Feb 2025', 'members' => '5.120', 'posts' => '97']
-];
+$allMyCommunities = fetchJoinedCommunitiesByUser($userId);
+$myCommunitiesOwned = fetchOwnedCommunitiesByUser($userId);
+$ownedCommunityIds = array_fill_keys(array_map(fn($item) => (string) ($item['id'] ?? ''), $myCommunitiesOwned), true);
+$myCommunitiesJoined = array_values(array_filter($allMyCommunities, function ($item) use ($ownedCommunityIds, $userId) {
+  $isOwned = isset($ownedCommunityIds[(string) ($item['id'] ?? '')]);
+  $isOwnerByField = (string) ($item['owner_id'] ?? '') === (string) $userId;
+  $isOwnerByRole = ($item['role'] ?? '') === 'owner';
+  return !$isOwned && !$isOwnerByField && !$isOwnerByRole;
+}));
 
 $categories = [
   ['image' => '/assets/dashboard-komunitas/leaf.png', 'title' => 'Lingkungan', 'count' => '1.245 komunitas'],
@@ -237,6 +241,57 @@ $suggestions = [
                     </div>
                     <div class="flex items-center gap-6">
                       <a href="/dashboard/komunitas/detail?id=<?= urlencode((string) ($item['id'] ?? '')) ?>" class="flex h-11.5 items-center gap-2 rounded-xl border border-[#11773D] bg-white px-5 text-[15px] font-semibold text-[#11773D] transition hover:bg-[#11773D] hover:text-white">
+                        👀 Lihat
+                      </a>
+                    </div>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+          </div>
+
+          <div class="border-t border-[#EAECF0] pt-8">
+            <div class="mb-4">
+              <h3 class="text-lg font-bold text-gray-800">Komunitas Saya</h3>
+              <p class="mt-1 text-[14px] text-[#667085]">Komunitas yang Anda buat dan kelola sebagai pemilik.</p>
+            </div>
+            <?php if (empty($myCommunitiesOwned)): ?>
+              <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-gray-500">
+                Anda belum memiliki komunitas.
+              </div>
+            <?php else: ?>
+              <div class="flex flex-col gap-4">
+                <?php foreach ($myCommunitiesOwned as $item): ?>
+                  <div
+                    class="community-card flex items-center justify-between border-b border-[#EAECF0] py-5"
+                    data-search="<?= htmlspecialchars(strtolower((string) ($item['title'] ?? '') . ' ' . ($item['desc'] ?? '') . ' ' . ($item['city'] ?? ''))) ?>"
+                    data-title="<?= htmlspecialchars(strtolower((string) ($item['title'] ?? ''))) ?>"
+                    data-location="<?= htmlspecialchars(strtolower((string) ($item['city'] ?? 'indonesia'))) ?>">
+                    <div class="flex flex-1 items-center gap-5">
+                      <div class="flex h-18.5 w-18.5 items-center justify-center rounded-full bg-[#EEF4EC]">
+                        <img src="<?= htmlspecialchars($item['image']) ?>" alt="" class="w-17 h-17 object-contain" />
+                      </div>
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <h3 class="text-[24px] font-semibold text-[#101828]"><?= htmlspecialchars($item['title']) ?></h3>
+                          <span class="rounded-full bg-[#E8F5E9] px-3 py-1 text-xs font-bold text-[#11773D]">Pemilik</span>
+                        </div>
+                        <p class="mt-1 max-w-90 text-[15px] leading-7 text-[#667085]"><?= htmlspecialchars($item['desc']) ?></p>
+                        <div class="mt-2 flex items-center gap-2 text-[14px] text-[#667085]">📅 <?= htmlspecialchars($item['date']) ?></div>
+                      </div>
+                    </div>
+                    <div class="mr-12 flex gap-14">
+                      <div class="text-center">
+                        <h4 class="text-[30px] font-semibold leading-none text-[#11773D]"><?= htmlspecialchars($item['members']) ?></h4>
+                        <p class="mt-2 text-[15px] text-[#667085]">Anggota</p>
+                      </div>
+                      <div class="text-center">
+                        <h4 class="text-[30px] font-semibold leading-none text-[#11773D]"><?= htmlspecialchars($item['posts']) ?></h4>
+                        <p class="mt-2 text-[15px] text-[#667085]">Postingan</p>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-6">
+                      <a href="/dashboard/komunitas/detail?id=<?= urlencode((string) ($item['id'] ?? '')) ?>" class="flex h-11.5 items-center gap-2 rounded-xl border border-[#11773D] bg-[#11773D] px-5 text-[15px] font-semibold text-white transition hover:bg-[#0E6634]">
                         ⚙️ Kelola
                       </a>
                     </div>

@@ -17,6 +17,8 @@ function formatCommunityRow(array $community): array {
     'caption' => $community['caption'] ?? '',
     'member_count' => (int) ($community['member_count'] ?? $community['joined_members'] ?? 0),
     'posts' => 0,
+    'owner_id' => $community['owner_id'] ?? null,
+    'role' => $community['role'] ?? null,
   ];
 }
 
@@ -96,6 +98,8 @@ function fetchJoinedCommunitiesByUser(string $userId): array {
         c.caption,
         c.tags,
         c.created_at,
+        c.owner_id,
+        cm.role,
         COALESCE(c.member_count, 0) AS member_count,
         cm.joined_at
       FROM public.community_members cm
@@ -361,7 +365,7 @@ function createCommunity(string $userId, array $payload): array {
       ':user_id' => $userId,
     ]);
     $pdo->prepare("UPDATE public.community_members SET role='owner' WHERE community_id=:community_id AND user_id=:user_id")
-      ->execute([':community_id'=>$community['id'], ':user_id'=>$userId]);
+      ->execute([':community_id' => $community['id'], ':user_id' => $userId]);
 
     return ['success' => true, 'message' => 'Komunitas berhasil dibuat.', 'community' => $community];
   } catch (Throwable $e) {
@@ -492,6 +496,24 @@ function createCommunityPost(string $userId, string $communityId, array $payload
     ensureCommunityFeatureSchema();
     $stmt = $pdo->prepare("INSERT INTO public.community_posts (community_id, user_id, caption, image) VALUES (:community_id, :user_id, :caption, :image)");
     $stmt->execute([':community_id' => $communityId, ':user_id' => $userId, ':caption' => $caption ?: null, ':image' => $image ?: null]);
+
+    $community = fetchCommunityById($communityId);
+    $communityName = trim((string) ($community['name'] ?? 'Komunitas')) ?: 'Komunitas';
+    $authorName = 'Seorang anggota';
+    try {
+      $profileStmt = $pdo->prepare("SELECT full_name FROM public.profiles WHERE id = :user_id LIMIT 1");
+      $profileStmt->execute([':user_id' => $userId]);
+      $profileName = trim((string) ($profileStmt->fetchColumn() ?: ''));
+      if ($profileName !== '') $authorName = $profileName;
+    } catch (Throwable $e) {
+    }
+
+    notifyCommunityMembers(
+      $communityId,
+      'Postingan baru di ' . $communityName,
+      $authorName . ' membagikan postingan baru di komunitas ' . $communityName . '.'
+    );
+
     return ['success' => true, 'message' => 'Postingan berhasil dipublikasikan.'];
   } catch (Throwable $e) {
     return ['success' => false, 'message' => 'Gagal memposting: ' . $e->getMessage()];
@@ -532,6 +554,15 @@ function createCommunityEvent(string $userId, string $communityId, array $payloa
     $eventDate = trim((string) ($payload['event_date'] ?? '')) ?: null;
     $stmt = $pdo->prepare("INSERT INTO public.community_events (community_id,title,description,location,event_date,image,created_by) VALUES (:community_id,:title,:description,:location,:event_date,:image,:created_by)");
     $stmt->execute([':community_id' => $communityId, ':title' => $title, ':description' => trim((string)($payload['description'] ?? '')) ?: null, ':location' => trim((string)($payload['location'] ?? '')) ?: null, ':event_date' => $eventDate, ':image' => trim((string)($payload['image'] ?? '')) ?: null, ':created_by' => $userId]);
+
+    $communityName = trim((string) ($community['name'] ?? 'Komunitas')) ?: 'Komunitas';
+    $eventMessage = 'Event baru "' . $title . '" telah dibuat di komunitas ' . $communityName . '.';
+    if ($eventDate) {
+      $eventMessage .= ' Jadwal: ' . date('d M Y H:i', strtotime($eventDate)) . '.';
+    }
+
+    notifyCommunityMembers($communityId, 'Event baru: ' . $title, $eventMessage);
+
     return ['success' => true, 'message' => 'Event berhasil dibuat.'];
   } catch (Throwable $e) {
     return ['success' => false, 'message' => 'Gagal membuat event: ' . $e->getMessage()];
@@ -567,5 +598,60 @@ function removeCommunityMember(string $ownerId, string $communityId, string $mem
     return ['success' => true, 'message' => 'Anggota berhasil dihapus dari komunitas.'];
   } catch (Throwable $e) {
     return ['success' => false, 'message' => 'Gagal menghapus anggota: ' . $e->getMessage()];
+  }
+}
+
+function fetchOwnedCommunitiesByUser(string $userId): array {
+  global $pdo;
+
+  if (empty($userId)) return [];
+
+  try {
+    $stmt = $pdo->prepare("
+      SELECT
+        c.id,
+        c.name,
+        c.description,
+        c.city,
+        c.image,
+        c.caption,
+        c.tags,
+        c.created_at,
+        c.owner_id,
+        'owner' AS role,
+        COALESCE(c.member_count, 0) AS member_count
+      FROM public.communities c
+      WHERE c.owner_id = :user_id
+      ORDER BY c.created_at DESC
+    ");
+    $stmt->execute([':user_id' => $userId]);
+    return array_map('formatCommunityRow', $stmt->fetchAll(PDO::FETCH_ASSOC));
+  } catch (Throwable $e) {
+    return [];
+  }
+}
+
+function notifyCommunityMembers(string $communityId, string $title, string $message): bool {
+  global $pdo;
+
+  if (empty($communityId)) return false;
+
+  try {
+    ensureCommunityFeatureSchema();
+    $stmt = $pdo->prepare("
+      INSERT INTO public.notifications (user_id, title, message, is_read)
+      SELECT cm.user_id, :title, :message, false
+      FROM public.community_members cm
+      WHERE cm.community_id = :community_id
+        AND cm.user_id IS NOT NULL
+    ");
+    $stmt->execute([
+      ':community_id' => $communityId,
+      ':title' => $title,
+      ':message' => $message,
+    ]);
+    return true;
+  } catch (Throwable $e) {
+    return false;
   }
 }
