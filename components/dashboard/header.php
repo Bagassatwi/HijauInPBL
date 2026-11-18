@@ -6,15 +6,7 @@ $userProfile = $_SESSION['user'] ?? [
   'full_name' => 'Tamu',
   'xp'        => 0
 ];
-$levels = [
-  ['level' => 1, 'minXp' => 0,    'title' => 'Eco Beginner 🌱'],
-  ['level' => 2, 'minXp' => 100,  'title' => 'Eco Explorer 🍃'],
-  ['level' => 3, 'minXp' => 250,  'title' => 'Eco Guardian 🌿'],
-  ['level' => 4, 'minXp' => 450,  'title' => 'Nature Protector 🌳'],
-  ['level' => 5, 'minXp' => 700,  'title' => 'Earth Hero 🌍'],
-  ['level' => 6, 'minXp' => 1000, 'title' => 'Green Champion 🏆'],
-  ['level' => 7, 'minXp' => 1350, 'title' => 'Planet Savior ⭐'],
-];
+$levels = getLevelsFromDatabase();
 
 $notifications ??= [];
 $unreadNotifications = array_values(array_filter($notifications, function ($notification) {
@@ -32,41 +24,54 @@ $fullName = $userProfile['full_name'] ?? 'Tamu';
 $firstName = explode(' ', trim($fullName))[0];
 $userXp = (int)($userProfile['xp'] ?? 0);
 $levelInfo = getCurrentLevel($userXp, $levels);
-$progressInfo = getLevelProgress($userXp);
-$progressPercent = min(100, max(0, (int) round(($userXp / max(1, $progressInfo['nextXp'])) * 100)));
+$progressInfo = getLevelProgress($userXp, $levels);
+$progressPercent = $progressInfo['isMaxLevel'] ? 100 : min(100, max(0, (int) round(($userXp / max(1, $progressInfo['nextXp'])) * 100)));
+$progressText = $progressInfo['isMaxLevel'] ? 'MAX' : (string) $progressPercent . '%';
 
 $headerConfig = [
-  '/admin' => [
+  '/dashboard' => [
     'title'       => "Halo, {$firstName}! 👋",
     'subtitle'    => 'Selamat datang kembali!',
     'description' => 'Teruslah beraksi, karena setiap langkah kecil <br /> berdampak besar bagi bumi kita. 🌱',
     'src'         => '/assets/dashboard/main.png',
   ],
-  '/admin/aktivitas' => [
+  '/dashboard/aktivitas' => [
     'title'       => 'Aktivitas 🌱',
     'subtitle'    => null,
     'description' => 'Catat dan lihat semua aksi hijau yang kamu lakukan.',
     'src'         => '/assets/aktivitas/m.png',
   ],
-  '/admin/ai-assistant' => [
+  '/dashboard/ai-assistant' => [
     'title'       => 'AI Assistant ✨',
     'subtitle'    => null,
     'description' => 'Asisten cerdasmu untuk hidup lebih hijau setiap hari.',
     'src'         => null,
   ],
-  '/admin/challenge' => [
+  '/dashboard/challenge' => [
     'title'       => 'Challenge 🌱',
     'subtitle'    => null,
     'description' => 'Ikuti challenge seru dan raih poin serta badge spesial!',
     'src'         => '/assets/challange/main.png',
   ],
-  '/admin/komunitas' => [
+  '/dashboard/leaderboard' => [
+    'title'       => 'Leaderboard 🏆',
+    'subtitle'    => null,
+    'description' => 'Lihat siapa yang paling aktif menjaga bumi dan mengumpulkan Eco Point.',
+    'src'         => '/assets/dashboard/main.png',
+  ],
+  '/dashboard/leaderboard' => [
+    'title'       => 'Leaderboard 🏆',
+    'subtitle'    => null,
+    'description' => 'Lihat siapa yang paling aktif menjaga bumi dan mengumpulkan Eco Point.',
+    'src'         => '/assets/dashboard/main.png',
+  ],
+  '/dashboard/komunitas' => [
     'title'       => 'Komunitas 🌱',
     'subtitle'    => null,
     'description' => 'Bersama komunitas, wujudkan bumi yang lebih hijau!',
     'src'         => '/assets/dashboard-komunitas/main.png',
   ],
-  '/admin/profil' => [
+  '/dashboard/profil' => [
     'title'       => 'Profil Saya 🌿',
     'subtitle'    => null,
     'description' => 'Kelola informasi profil dan pengaturan akun Anda.',
@@ -74,7 +79,7 @@ $headerConfig = [
   ],
 ];
 
-$currentConfig = $headerConfig[$pathname] ?? $headerConfig['/admin'];
+$currentConfig = $headerConfig[$pathname] ?? $headerConfig['/dashboard'];
 ?>
 
 <header class="rounded-3xl sticky top-0 bg-inherit flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-8 z-999" <?php if (!empty($currentConfig['src'])) ?> style="background-image: url(<?php echo htmlspecialchars($currentConfig['src']) ?>); background-size: 50%; background-repeat:no-repeat;background-position: center;">
@@ -222,7 +227,7 @@ $currentConfig = $headerConfig[$pathname] ?? $headerConfig['/admin'];
               LEVEL <?= htmlspecialchars((string) ($levelInfo['level'] ?? 1)) ?>
             </span>
             <span class="text-[12px] font-semibold text-[#11773D]">
-              <?= htmlspecialchars((string) $progressPercent) ?>%
+              <?= htmlspecialchars((string) $progressText) ?>
             </span>
           </div>
 
@@ -231,7 +236,11 @@ $currentConfig = $headerConfig[$pathname] ?? $headerConfig['/admin'];
           </div>
 
           <div class="text-[12px] font-medium text-gray-700">
-            <?= number_format($userXp, 0, ',', '.') ?> / <?= number_format($progressInfo['nextXp'], 0, ',', '.') ?> XP
+            <?php if ($progressInfo['isMaxLevel']): ?>
+              <?= number_format($userXp, 0, ',', '.') ?> XP
+            <?php else: ?>
+              <?= number_format($userXp, 0, ',', '.') ?> / <?= number_format($progressInfo['nextXp'], 0, ',', '.') ?> XP
+            <?php endif; ?>
           </div>
         </div>
 

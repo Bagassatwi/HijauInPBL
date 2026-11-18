@@ -1,25 +1,17 @@
 <?php
 session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/level.php';
-$levels = [
-  ['level' => 1, 'minXp' => 0, 'title' => 'Eco Beginner 🌱'],
-  ['level' => 2, 'minXp' => 100, 'title' => 'Eco Explorer 🍃'],
-  ['level' => 3, 'minXp' => 250, 'title' => 'Eco Guardian 🌿'],
-  ['level' => 4, 'minXp' => 450, 'title' => 'Nature Protector 🌳'],
-  ['level' => 5, 'minXp' => 700, 'title' => 'Earth Hero 🌍'],
-  ['level' => 6, 'minXp' => 1000, 'title' => 'Green Champion 🏆'],
-  ['level' => 7, 'minXp' => 1350, 'title' => 'Planet Savior ⭐'],
-];
+
 $userProfile = $_SESSION['user'] ?? [
   'id' => '',
   'full_name' => 'Tamu',
   'xp' => 0
 ];
+$levels = getLevelsFromDatabase();
 
 $pathname = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-// print_r($userProfile['level']);
 $levelInfo = getCurrentLevel((int) ($userProfile['xp'] ?? 0), $levels);
-$progress = getLevelProgress((int) ($userProfile['xp'] ?? 0));
+$progress = getLevelProgress((int) ($userProfile['xp'] ?? 0), $levels);
 
 $navItems = [];
 
@@ -29,9 +21,27 @@ if ($_SESSION['user']['is_super_admin']) {
       'name' => 'Articles',
       'path' => '/dashboard/articles',
       'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
-  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-  <circle cx="12" cy="7" r="4"/>
+  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+  <path d="M6.5 2H20v15H6.5A2.5 2.5 0 0 1 4 14.5v-10A2.5 2.5 0 0 1 6.5 2Z"/>
+  <path d="M8 6h8"/>
+  <path d="M8 10h8"/>
 </svg>'
+    ],
+    [
+      'name' => 'Categories',
+      'path' => '/dashboard/articles/categories',
+      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+  <path d="M3 7h7l2 3h9v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
+  <path d="M3 7V5a2 2 0 0 1 2-2h4l2 3"/>
+</svg>'
+    ],
+    [
+      'name' => 'Leaderboard',
+      'path' => '/dashboard/leaderboard',
+      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+      <path d="M8 21V7m8 14V3m-8 9h8"/>
+      <path d="M6 7h12"/>
+    </svg>'
     ]
   ];
 } else {
@@ -165,12 +175,16 @@ if ($_SESSION['user']['is_super_admin']) {
     </div>
     <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1">
       <div class="bg-[#11773D] h-2.5 rounded-full transition-all duration-500"
-        style="width: <?= (float) $progress['progress'] ?>%"></div>
+        style="width: <?= (float) ($progress['isMaxLevel'] ? 100 : $progress['progress']) ?>%"></div>
     </div>
     <div class="flex justify-between text-base font-semibold text-gray-500">
       <span>Level <?= $userProfile['level'] ?></span>
       <span>
-        <?= (int) $progress['currentXp'] ?> / <?= (int) $progress['nextXp'] ?> XP
+        <?php if ($progress['isMaxLevel']): ?>
+          MAX • <?= (int) $progress['currentXp'] ?> XP
+        <?php else: ?>
+          <?= (int) $progress['currentXp'] ?> / <?= (int) $progress['nextXp'] ?> XP
+        <?php endif; ?>
       </span>
     </div>
   </div>

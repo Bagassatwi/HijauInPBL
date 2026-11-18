@@ -147,6 +147,7 @@ $sql = "
 ";
 
 try {
+    $pdo->beginTransaction();
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':user_id'           => $payload['user_id'],
@@ -167,13 +168,24 @@ try {
 
     $createdActivity = $stmt->fetch();
 
+    $xpStmt = $pdo->prepare("UPDATE public.profiles SET xp = COALESCE(xp, 0) + :points WHERE id = :user_id");
+    $xpStmt->execute([':points' => $point, ':user_id' => $payload['user_id']]);
+
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/services/challenge/challenge.php';
+    $challengeUpdates = syncChallengeProgress($pdo, (string)$payload['user_id']);
+    $pdo->commit();
+
     echo json_encode([
         'status' => 'success',
         'message' => 'Aktivitas berhasil ditambahkan.',
-        'data' => $createdActivity
+        'data' => $createdActivity,
+        'challenge_updates' => $challengeUpdates
     ]);
     exit;
 } catch (Throwable $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     http_response_code(500);
     echo json_encode([
         'status' => 'error',
