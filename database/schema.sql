@@ -116,10 +116,11 @@ CREATE TABLE public.challenges (
   image text,
   duration integer,
   reward_point integer,
-  reward_badge text,
+  reward_badge uuid,
   created_at timestamp with time zone DEFAULT now(),
   tag text,
-  CONSTRAINT challenges_pkey PRIMARY KEY (id)
+  CONSTRAINT challenges_pkey PRIMARY KEY (id),
+  CONSTRAINT challenges_reward_badge_fkey FOREIGN KEY (reward_badge) REFERENCES public.badges(id)
 );
 
 CREATE TABLE public.communities (

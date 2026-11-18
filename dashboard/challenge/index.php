@@ -81,6 +81,8 @@ $challengeRowsStmt = $pdo->prepare("
     ch.duration,
     ch.reward_point,
     ch.reward_badge,
+    rb.name AS reward_badge_name,
+    rb.image AS reward_badge_image,
     ch.tag,
     uc.progress,
     uc.target,
@@ -88,6 +90,7 @@ $challengeRowsStmt = $pdo->prepare("
     uc.joined_at,
     uc.completed_at
   FROM public.challenges ch
+  LEFT JOIN public.badges rb ON rb.id = ch.reward_badge
   LEFT JOIN public.user_challenges uc
     ON uc.challenge_id = ch.id
    AND uc.user_id = :user_id
@@ -110,9 +113,11 @@ foreach ($challengeRows as $row) {
   $target = max(1, (int) ($row['target'] ?? $duration));
   $status = strtolower((string) ($row['status'] ?? ''));
   $tag = trim((string) ($row['tag'] ?? 'Kebiasaan'));
-  $badgeName = trim((string) ($row['reward_badge'] ?? 'Eco Warrior'));
+  $badgeName = trim((string) ($row['reward_badge_name'] ?? 'Eco Warrior'));
   $badgeKey = $normalizeBadgeKey($badgeName);
-  $badgeImage = $badgeImageMap[$badgeKey] ?? $badgeImageMap['default'];
+  $badgeImage = !empty($row['reward_badge_image'])
+    ? (string) $row['reward_badge_image']
+    : ($badgeImageMap[$badgeKey] ?? $badgeImageMap['default']);
   $tagColor = $tagColorMap[$tag] ?? $tagColorMap['default'];
   $percent = min(100, (int) round(($progress / max(1, $target)) * 100));
 
@@ -307,6 +312,62 @@ $userBadgeCount = count($userBadges);
         }
       });
     });
+
+    const challengeSearchInput = document.getElementById("challengeSearchInput");
+    const challengeCategoryFilter = document.getElementById("challengeCategoryFilter");
+    const challengeSortFilter = document.getElementById("challengeSortFilter");
+    const challengeList = document.getElementById("challengeList");
+    const challengeResultCount = document.getElementById("challengeResultCount");
+    const challengeEmptyState = document.getElementById("challengeEmptyState");
+
+    function applyChallengeFilters() {
+      if (!challengeSearchInput || !challengeCategoryFilter || !challengeSortFilter || !challengeList) return;
+
+      const query = challengeSearchInput.value.trim().toLowerCase();
+      const category = challengeCategoryFilter.value;
+      const sortType = challengeSortFilter.value;
+      const cards = Array.from(challengeList.querySelectorAll(".challenge-card"));
+
+      cards.forEach(card => {
+        const searchableText = [
+          card.dataset.title || "",
+          card.dataset.desc || "",
+          card.dataset.tag || "",
+          card.dataset.badge || "",
+        ].join(" ");
+        const matchesSearch = !query || searchableText.includes(query);
+        const matchesCategory = category === "semua" || (card.dataset.tag || "") === category;
+        card.classList.toggle("hidden", !(matchesSearch && matchesCategory));
+      });
+
+      const visibleCards = cards.filter(card => !card.classList.contains("hidden"));
+
+      visibleCards.sort((a, b) => {
+        if (sortType === "poin-tertinggi") {
+          return Number(b.dataset.point || 0) - Number(a.dataset.point || 0);
+        }
+        if (sortType === "nama") {
+          return (a.dataset.title || "").localeCompare(b.dataset.title || "", "id");
+        }
+        return 0;
+      });
+
+      visibleCards.forEach(card => challengeList.appendChild(card));
+
+      if (challengeResultCount) {
+        challengeResultCount.textContent = visibleCards.length === 1 ?
+          "1 challenge ditemukan" :
+          `${visibleCards.length} challenge ditemukan`;
+      }
+      if (challengeEmptyState) {
+        challengeEmptyState.classList.toggle("hidden", visibleCards.length !== 0);
+      }
+    }
+
+    challengeSearchInput?.addEventListener("input", applyChallengeFilters);
+    challengeCategoryFilter?.addEventListener("change", applyChallengeFilters);
+    challengeSortFilter?.addEventListener("change", applyChallengeFilters);
+    applyChallengeFilters();
 
     const tabBtns = document.querySelectorAll(".tab-btn");
     const tabContents = document.querySelectorAll(".tab-content");

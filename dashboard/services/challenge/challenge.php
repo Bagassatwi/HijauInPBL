@@ -7,9 +7,11 @@ function syncChallengeProgress(PDO $pdo, string $userId): array {
   $stmt = $pdo->prepare("
     SELECT uc.id, uc.challenge_id, uc.progress, uc.target, uc.status,
            uc.reward_claimed, uc.joined_at, ch.duration, ch.reward_point,
-           ch.reward_badge, ch.tag, ch.title, ch.description
+           ch.reward_badge, rb.name AS reward_badge_name,
+           ch.tag, ch.title, ch.description
     FROM public.user_challenges uc
     JOIN public.challenges ch ON ch.id = uc.challenge_id
+    LEFT JOIN public.badges rb ON rb.id = ch.reward_badge
     WHERE uc.user_id = :user_id
       AND uc.status = 'active'
   ");
@@ -68,19 +70,12 @@ function syncChallengeProgress(PDO $pdo, string $userId): array {
         $xpStmt->execute([':points' => $rewardPoint, ':user_id' => $userId]);
       }
 
-      $badgeName = trim((string)$challenge['reward_badge']);
-      if ($badgeName !== '') {
-        $badgeStmt = $pdo->prepare("SELECT id FROM public.badges WHERE LOWER(name) = LOWER(:name) LIMIT 1");
-        $badgeStmt->execute([':name' => $badgeName]);
-        $badgeId = $badgeStmt->fetchColumn();
+      $badgeId = trim((string)$challenge['reward_badge']);
+      if ($badgeId !== '') {
+        $badgeExistsStmt = $pdo->prepare("SELECT 1 FROM public.badges WHERE id = :badge_id LIMIT 1");
+        $badgeExistsStmt->execute([':badge_id' => $badgeId]);
 
-        if (!$badgeId) {
-          $badgeStmt = $pdo->prepare("INSERT INTO public.badges (name) VALUES (:name) RETURNING id");
-          $badgeStmt->execute([':name' => $badgeName]);
-          $badgeId = $badgeStmt->fetchColumn();
-        }
-
-        if ($badgeId) {
+        if ($badgeExistsStmt->fetchColumn()) {
           $existsStmt = $pdo->prepare("SELECT 1 FROM public.user_badges WHERE user_id = :user_id AND badge_id = :badge_id LIMIT 1");
           $existsStmt->execute([':user_id' => $userId, ':badge_id' => $badgeId]);
           if (!$existsStmt->fetchColumn()) {
