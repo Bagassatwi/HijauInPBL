@@ -48,9 +48,14 @@ try {
   ]);
 
   if ($createdActivity) {
-    rewardUser($pdo, $userId, $point);
+    $newXp = rewardUser($pdo, $userId, $point);
     $pdo->commit();
-    echo json_encode(['status' => 'success', 'data' => $createdActivity]);
+    echo json_encode([
+      'status' => 'success',
+      'data' => $createdActivity,
+      'xp' => $newXp,
+      'level' => $_SESSION['user']['level'] ?? null
+    ]);
   } else {
     $pdo->rollBack();
     echo json_encode(['status' => 'error', 'message' => 'Gagal membuat aktivitas.']);

@@ -139,13 +139,42 @@ function getWeeklyActivityInsight(PDO $pdo, string $userId): array {
   ];
 }
 
-function rewardUser(PDO $pdo, string $userId, int $points): bool {
-  $stmt = $pdo->prepare("UPDATE public.profiles SET xp = COALESCE(xp, 0) + :points WHERE id = :user_id");
+function rewardUser(PDO $pdo, string $userId, int $points): ?int {
+  $stmt = $pdo->prepare("
+    UPDATE public.profiles
+    SET xp = COALESCE(xp, 0) + :points
+    WHERE id = :user_id
+    RETURNING xp
+  ");
   $success = $stmt->execute([':points' => $points, ':user_id' => $userId]);
 
-  if (isset($_SESSION['user']) && $_SESSION['user']['id'] === $userId) {
-    $_SESSION['user']['xp'] = ((int)($_SESSION['user']['xp'] ?? 0)) + $points;
+  if (!$success) {
+    return null;
   }
 
-  return $success;
+  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+  $newXp = (int)($row['xp'] ?? 0);
+
+  $levelStmt = $pdo->prepare("
+    UPDATE public.profiles p
+    SET level = COALESCE((
+      SELECT l.level
+      FROM public.levels l
+      WHERE l.min_xp <= p.xp
+      ORDER BY l.min_xp DESC
+      LIMIT 1
+    ), 1)
+    WHERE p.id = :user_id
+    RETURNING level
+  ");
+  $levelStmt->execute([':user_id' => $userId]);
+  $levelRow = $levelStmt->fetch(PDO::FETCH_ASSOC);
+  $newLevel = (int)($levelRow['level'] ?? 1);
+
+  if (isset($_SESSION['user']) && (string)($_SESSION['user']['id'] ?? '') === $userId) {
+    $_SESSION['user']['xp'] = $newXp;
+    $_SESSION['user']['level'] = $newLevel;
+  }
+
+  return $newXp;
 }

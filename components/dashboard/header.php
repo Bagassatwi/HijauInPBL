@@ -1,5 +1,6 @@
 <?php
 require_once $_SERVER["DOCUMENT_ROOT"] . '/utils/level.php';
+require_once $_SERVER["DOCUMENT_ROOT"] . '/utils/connection.php';
 
 $userProfile = $_SESSION['user'] ?? [
   'id'        => '',
