@@ -17,6 +17,8 @@ function formatCommunityRow(array $community): array {
     'caption' => $community['caption'] ?? '',
     'member_count' => (int) ($community['member_count'] ?? $community['joined_members'] ?? 0),
     'posts' => 0,
+    'owner_id' => $community['owner_id'] ?? null,
+    'role' => $community['role'] ?? null,
   ];
 }
 
@@ -96,6 +98,8 @@ function fetchJoinedCommunitiesByUser(string $userId): array {
         c.caption,
         c.tags,
         c.created_at,
+        c.owner_id,
+        cm.role,
         COALESCE(c.member_count, 0) AS member_count,
         cm.joined_at
       FROM public.community_members cm
@@ -361,7 +365,7 @@ function createCommunity(string $userId, array $payload): array {
       ':user_id' => $userId,
     ]);
     $pdo->prepare("UPDATE public.community_members SET role='owner' WHERE community_id=:community_id AND user_id=:user_id")
-      ->execute([':community_id'=>$community['id'], ':user_id'=>$userId]);
+      ->execute([':community_id' => $community['id'], ':user_id' => $userId]);
 
     return ['success' => true, 'message' => 'Komunitas berhasil dibuat.', 'community' => $community];
   } catch (Throwable $e) {
@@ -567,5 +571,35 @@ function removeCommunityMember(string $ownerId, string $communityId, string $mem
     return ['success' => true, 'message' => 'Anggota berhasil dihapus dari komunitas.'];
   } catch (Throwable $e) {
     return ['success' => false, 'message' => 'Gagal menghapus anggota: ' . $e->getMessage()];
+  }
+}
+
+function fetchOwnedCommunitiesByUser(string $userId): array {
+  global $pdo;
+
+  if (empty($userId)) return [];
+
+  try {
+    $stmt = $pdo->prepare("
+      SELECT
+        c.id,
+        c.name,
+        c.description,
+        c.city,
+        c.image,
+        c.caption,
+        c.tags,
+        c.created_at,
+        c.owner_id,
+        'owner' AS role,
+        COALESCE(c.member_count, 0) AS member_count
+      FROM public.communities c
+      WHERE c.owner_id = :user_id
+      ORDER BY c.created_at DESC
+    ");
+    $stmt->execute([':user_id' => $userId]);
+    return array_map('formatCommunityRow', $stmt->fetchAll(PDO::FETCH_ASSOC));
+  } catch (Throwable $e) {
+    return [];
   }
 }
