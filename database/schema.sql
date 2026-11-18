@@ -1,3 +1,59 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE auth.users (
+  instance_id uuid,
+  id uuid NOT NULL,
+  aud character varying,
+  role character varying,
+  email character varying,
+  encrypted_password character varying,
+  email_confirmed_at timestamp with time zone,
+  invited_at timestamp with time zone,
+  confirmation_token character varying,
+  confirmation_sent_at timestamp with time zone,
+  recovery_token character varying,
+  recovery_sent_at timestamp with time zone,
+  email_change_token_new character varying,
+  email_change character varying,
+  email_change_sent_at timestamp with time zone,
+  last_sign_in_at timestamp with time zone,
+  raw_app_meta_data jsonb,
+  raw_user_meta_data jsonb,
+  is_super_admin boolean,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  phone text DEFAULT NULL::character varying UNIQUE,
+  phone_confirmed_at timestamp with time zone,
+  phone_change text DEFAULT ''::character varying,
+  phone_change_token character varying DEFAULT ''::character varying,
+  phone_change_sent_at timestamp with time zone,
+  confirmed_at timestamp with time zone DEFAULT LEAST(email_confirmed_at, phone_confirmed_at),
+  email_change_token_current character varying DEFAULT ''::character varying,
+  email_change_confirm_status smallint DEFAULT 0 CHECK (email_change_confirm_status >= 0 AND email_change_confirm_status <= 2),
+  banned_until timestamp with time zone,
+  reauthentication_token character varying DEFAULT ''::character varying,
+  reauthentication_sent_at timestamp with time zone,
+  is_sso_user boolean NOT NULL DEFAULT false,
+  deleted_at timestamp with time zone,
+  is_anonymous boolean NOT NULL DEFAULT false,
+  CONSTRAINT users_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE auth.refresh_tokens (
+  instance_id uuid,
+  id bigint NOT NULL DEFAULT nextval('auth.refresh_tokens_id_seq'::regclass),
+  token character varying UNIQUE,
+  user_id character varying,
+  revoked boolean,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  parent character varying,
+  session_id uuid,
+  CONSTRAINT refresh_tokens_pkey PRIMARY KEY (id),
+  CONSTRAINT refresh_tokens_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id)
+);
+
 -- 1. Tables without foreign keys
 create table public.levels (
   id uuid not null default gen_random_uuid(),
@@ -76,6 +132,7 @@ CREATE TABLE public.communities (
   created_at timestamp with time zone DEFAULT now(),
   caption text,
   tags text[],
+  owner_id uuid NOT NULL,
   CONSTRAINT communities_pkey PRIMARY KEY (id)
 );
 
@@ -85,14 +142,15 @@ CREATE TABLE public.messages (
   role text CHECK (role = ANY (ARRAY['user'::text, 'model'::text])),
   content text NOT NULL,
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT messages_pkey PRIMARY KEY (id)
+  CONSTRAINT messages_pkey PRIMARY KEY (id),
+  CONSTRAINT messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
 );
 
 -- 2. Primary user profile table (Depends on auth.users)
 CREATE TABLE public.profiles (
   id uuid NOT NULL,
   full_name text,
-  avatar_url text DEFAULT 'https://bzmrlrsyezgogcjhcytz.supabase.co/storage/v1/object/public/image/ava1.png'::text,
+  avatar_url text DEFAULT ''::text,
   bio text,
   city text,
   eco_score integer DEFAULT 0,
