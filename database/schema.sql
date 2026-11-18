@@ -116,10 +116,11 @@ CREATE TABLE public.challenges (
   image text,
   duration integer,
   reward_point integer,
-  reward_badge text,
+  reward_badge uuid,
   created_at timestamp with time zone DEFAULT now(),
   tag text,
-  CONSTRAINT challenges_pkey PRIMARY KEY (id)
+  CONSTRAINT challenges_pkey PRIMARY KEY (id),
+  CONSTRAINT challenges_reward_badge_fkey FOREIGN KEY (reward_badge) REFERENCES public.badges(id)
 );
 
 CREATE TABLE public.communities (
@@ -198,7 +199,8 @@ CREATE TABLE public.user_challenges (
   completed_at timestamp with time zone,
   CONSTRAINT user_challenges_pkey PRIMARY KEY (id),
   CONSTRAINT user_challenges_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
-  CONSTRAINT user_challenges_challenge_id_fkey FOREIGN KEY (challenge_id) REFERENCES public.challenges(id)
+  CONSTRAINT user_challenges_challenge_id_fkey FOREIGN KEY (challenge_id) REFERENCES public.challenges(id),
+  CONSTRAINT user_challenges_user_challenge_unique UNIQUE (user_id, challenge_id)
 );
 
 CREATE TABLE public.community_members (

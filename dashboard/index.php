@@ -3,11 +3,22 @@ session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/level.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/services/challenge/challenge.php';
 
 $userId = $_SESSION['user']['id'] ?? null;
 if (!$userId) {
   header('Location: /login.php');
   exit;
+}
+
+try {
+  $pdo->beginTransaction();
+  syncChallengeProgress($pdo, (string)$userId);
+  $pdo->commit();
+} catch (Throwable $e) {
+  if ($pdo->inTransaction()) {
+    $pdo->rollBack();
+  }
 }
 
 $normalizeMissionText = function (string $value): string {

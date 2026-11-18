@@ -1,21 +1,37 @@
 <div id="tab-semua" class="tab-content hidden flex-col gap-6">
-  <p class="text-red-500 text-sm font-semibold mb-2">Fitur filter kategori dan pencarian sedang dalam tahap pengembangan (Coming Soon)</p>
-
   <div class="md:flex-row flex flex-col items-center gap-4">
-    <button type="button" disabled class="md:w-auto rounded-xl flex items-center justify-between w-full gap-2 px-4 py-3 text-base font-semibold text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed">
-      🔍 Semua Kategori ▼
-    </button>
+    <?php
+    $allChallengeTags = array_values(array_unique(array_filter(array_map(fn($item) => trim((string)($item['tag'] ?? '')), $allChallenges))));
+    sort($allChallengeTags);
+    ?>
+    <select id="challengeCategoryFilter" class="md:w-auto rounded-xl w-full px-4 py-3 text-base font-semibold text-[#344054] bg-white border border-gray-200 outline-none focus:border-[#11773D]">
+      <option value="semua">Semua Kategori</option>
+      <?php foreach ($allChallengeTags as $challengeTag): ?>
+        <option value="<?= htmlspecialchars(strtolower($challengeTag)) ?>"><?= htmlspecialchars($challengeTag) ?></option>
+      <?php endforeach; ?>
+    </select>
+
     <div class="relative flex-1 w-full">
-      <input type="text" placeholder="Cari challenge..." disabled class="rounded-xl w-full py-3 pl-4 pr-4 text-base font-semibold border border-gray-200 bg-gray-50 text-gray-400 outline-none cursor-not-allowed" />
+      <input id="challengeSearchInput" type="search" placeholder="Cari challenge..." class="rounded-xl w-full py-3 pl-4 pr-4 text-base font-semibold border border-gray-200 bg-white text-[#344054] outline-none focus:border-[#11773D]" />
     </div>
-    <button type="button" disabled class="md:w-auto rounded-xl flex items-center justify-between w-full gap-2 px-4 py-3 text-base font-semibold text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed">
-      Terbaru ▼
-    </button>
+
+    <select id="challengeSortFilter" class="md:w-auto rounded-xl w-full px-4 py-3 text-base font-semibold text-[#344054] bg-white border border-gray-200 outline-none focus:border-[#11773D]">
+      <option value="terbaru">Terbaru</option>
+      <option value="poin-tertinggi">Poin Tertinggi</option>
+      <option value="nama">Nama A-Z</option>
+    </select>
   </div>
 
-  <div class="flex flex-col gap-4">
+  <p id="challengeResultCount" class="text-sm font-medium text-[#667085]"></p>
+
+  <div id="challengeList" class="flex flex-col gap-4">
     <?php foreach ($allChallenges as $item): ?>
-      <div class="group flex items-center justify-between border-b border-[#EAECF0] py-4">
+      <div class="challenge-card group flex items-center justify-between border-b border-[#EAECF0] py-4"
+        data-title="<?= htmlspecialchars(strtolower($item['title'])) ?>"
+        data-desc="<?= htmlspecialchars(strtolower($item['desc'])) ?>"
+        data-tag="<?= htmlspecialchars(strtolower($item['tag'])) ?>"
+        data-badge="<?= htmlspecialchars(strtolower($item['badge'])) ?>"
+        data-point="<?= (int)$item['point'] ?>">
         <div class="flex flex-1 items-center gap-6">
           <div class="flex h-[86px] w-[86px] items-center justify-center rounded-full bg-[#EEF4EC]">
             <img src="<?= htmlspecialchars($item['image']) ?>" alt="<?= htmlspecialchars($item['title']) ?>" class="w-[70px] h-[70px] object-contain" />
@@ -50,16 +66,21 @@
           </div>
         </div>
 
-        <button class="ml-8 text-[#98A2B3]">➔</button>
+        <?php if (($item['status'] ?? '') === 'active'): ?>
+          <span class="ml-8 rounded-full bg-[#EEF8F0] px-4 py-2 text-sm font-semibold text-[#11773D]">Aktif</span>
+        <?php elseif (($item['status'] ?? '') === 'completed'): ?>
+          <span class="ml-8 rounded-full bg-[#F2F4F7] px-4 py-2 text-sm font-semibold text-[#475467]">Selesai</span>
+        <?php else: ?>
+          <button type="button" class="join-challenge-btn ml-8 min-w-[110px] rounded-xl bg-[#11773D] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0E6634]" data-challenge-id="<?= htmlspecialchars($item['challengeId']) ?>">
+            Ikuti
+          </button>
+        <?php endif; ?>
       </div>
     <?php endforeach; ?>
   </div>
 
-  <div class="flex items-center justify-center gap-2 mt-6">
-    <button class="flex items-center justify-center w-10 h-10 text-gray-400 border border-gray-200 rounded-lg">◄</button>
-    <button class="bg-[#11773D] flex items-center justify-center w-10 h-10 text-base font-bold text-white rounded-lg">1</button>
-    <button class="flex items-center justify-center w-10 h-10 text-base font-bold text-gray-600 border border-gray-200 rounded-lg">2</button>
-    <button class="flex items-center justify-center w-10 h-10 text-base font-bold text-gray-600 border border-gray-200 rounded-lg">3</button>
-    <button class="flex items-center justify-center w-10 h-10 text-gray-600 border border-gray-200 rounded-lg">►</button>
+  <div id="challengeEmptyState" class="hidden rounded-[20px] border border-dashed border-[#D7E8DC] bg-[#F8FBF8] px-6 py-8 text-center">
+    <p class="text-[18px] font-semibold text-[#344054]">Challenge tidak ditemukan</p>
+    <p class="mt-2 text-[15px] text-[#667085]">Coba kata kunci atau kategori lain.</p>
   </div>
 </div>

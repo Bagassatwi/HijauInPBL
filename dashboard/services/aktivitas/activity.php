@@ -140,7 +140,7 @@ function getWeeklyActivityInsight(PDO $pdo, string $userId): array {
 }
 
 function rewardUser(PDO $pdo, string $userId, int $points): bool {
-  $stmt = $pdo->prepare("UPDATE public.users SET xp = COALESCE(xp, 0) + :points WHERE id = :user_id");
+  $stmt = $pdo->prepare("UPDATE public.profiles SET xp = COALESCE(xp, 0) + :points WHERE id = :user_id");
   $success = $stmt->execute([':points' => $points, ':user_id' => $userId]);
 
   if (isset($_SESSION['user']) && $_SESSION['user']['id'] === $userId) {
