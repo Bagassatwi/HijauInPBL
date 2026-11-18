@@ -282,8 +282,8 @@ $recentActivities = $recentActivitiesStmt->fetchAll(PDO::FETCH_ASSOC);
       <div class="rounded-[28px] border border-[#EAECF0] bg-white p-8">
         <h3 class="mb-8 text-[20px] font-semibold text-[#101828]">Level & Progress</h3>
 
-        <div class="mb-8 flex items-center gap-8">
-          <img src="/assets/profil/lv.png" alt="Level Badge" class="w-20 h-20 object-contain" />
+        <div class="mb-8 flex items-center gap-4">
+          <img src="<?php echo $levelInfo['photo']; ?>" alt="Level Badge" class="size-25 object-contain" />
           <div>
             <h2 class="text-[30px] font-semibold leading-none text-[#101828]">Level <?= $level ?></h2>
             <p class="mt-3 text-[20px] font-medium text-[#344054]">Eco Guardian</p>
