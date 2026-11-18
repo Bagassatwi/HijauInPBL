@@ -1,7 +1,9 @@
 <?php
+session_start();
 header('Content-Type: application/json');
 
 include_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
+include_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/services/aktivitas/activity.php';
 
 function uploadActivityToSupabase(array $file): string {
     $projectUrl = getenv('PROJECT_URL');
@@ -59,9 +61,19 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+$sessionUserId = $_SESSION['user']['id'] ?? null;
+if (!$sessionUserId) {
+    http_response_code(401);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Belum login.'
+    ]);
+    exit;
+}
+
 $payload = $_POST;
 
-if (empty($payload['user_id']) || empty($payload['category_id']) || empty(trim((string) ($payload['title'] ?? '')))) {
+if (empty($payload['category_id']) || empty(trim((string) ($payload['title'] ?? '')))) {
     http_response_code(400);
     echo json_encode([
         'status' => 'error',
@@ -149,7 +161,7 @@ $sql = "
 try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
-        ':user_id'           => $payload['user_id'],
+        ':user_id'           => (string)$sessionUserId,
         ':category_id'       => $payload['category_id'],
         ':title'             => trim((string) $payload['title']),
         ':description'       => trim((string) ($payload['description'] ?? '')),
@@ -167,10 +179,18 @@ try {
 
     $createdActivity = $stmt->fetch();
 
+    $sessionUserId = $_SESSION['user']['id'] ?? null;
+    $newXp = null;
+    if ($sessionUserId) {
+        $newXp = rewardUser($pdo, (string)$sessionUserId, $point);
+    }
+
     echo json_encode([
         'status' => 'success',
         'message' => 'Aktivitas berhasil ditambahkan.',
-        'data' => $createdActivity
+        'data' => $createdActivity,
+        'xp' => $newXp,
+        'level' => $_SESSION['user']['level'] ?? null
     ]);
     exit;
 } catch (Throwable $e) {
