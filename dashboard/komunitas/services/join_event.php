@@ -2,7 +2,7 @@
 
 header('Content-Type: application/json');
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/community.php';
+require_once __DIR__ . '/community.php';
 $userId = $_SESSION['user']['id'] ?? '';
 if (empty($userId)) {
   http_response_code(401);
