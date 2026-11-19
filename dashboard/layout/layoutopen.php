@@ -1,7 +1,6 @@
 <?php
 include_once $_SERVER['DOCUMENT_ROOT'] . "/utils/authguard.php";
 if (session_status() === PHP_SESSION_NONE) {
-  session_start();
 }
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/level.php';

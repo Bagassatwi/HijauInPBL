@@ -1,5 +1,5 @@
 <?php
-session_start();
+
 header('Content-Type: application/json');
 
 include_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
