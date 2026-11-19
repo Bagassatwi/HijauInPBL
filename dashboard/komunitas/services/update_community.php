@@ -7,7 +7,7 @@ $userId = $_SESSION['user']['id'] ?? '';
 $communityId = $_POST['community_id'] ?? '';
 if (empty($userId)) {
   http_response_code(401);
-  echo json_encode(['success' => false, 'message' => 'Silakan login terlebih dahulu.']);
+  echo json_encode(['success' => false, 'message' => 'Silahkan login terlebih dahulu.']);
   exit;
 }
 $result = updateCommunity($userId, $communityId, $_POST);

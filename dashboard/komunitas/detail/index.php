@@ -382,7 +382,7 @@ ensureCommunityFeatureSchema();
         return;
       }
 
-      const response = await fetch('/dashboard/actions/community/join_community.php', {
+      const response = await fetch('/dashboard/komunitas/services/join_community.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -429,7 +429,7 @@ ensureCommunityFeatureSchema();
   document.getElementById('communityPostForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const formData = new FormData(this);
-    const response = await fetch('/dashboard/actions/community/create_post.php', {
+    const response = await fetch('/dashboard/komunitas/services/create_post.php', {
       method: 'POST',
       body: formData,
       credentials: 'same-origin'
@@ -458,7 +458,7 @@ ensureCommunityFeatureSchema();
         return;
       }
 
-      const response = await fetch('/dashboard/actions/community/remove_member.php', {
+      const response = await fetch('/dashboard/komunitas/services/remove_member.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -484,7 +484,7 @@ ensureCommunityFeatureSchema();
   document.getElementById('communityEventForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const formData = new FormData(this);
-    const response = await fetch('/dashboard/actions/community/create_event.php', {
+    const response = await fetch('/dashboard/komunitas/services/create_event.php', {
       method: 'POST',
       body: formData,
       credentials: 'same-origin'
@@ -502,7 +502,7 @@ ensureCommunityFeatureSchema();
   document.getElementById('communitySettingsForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const formData = new FormData(this);
-    const response = await fetch('/dashboard/actions/community/update_community.php', {
+    const response = await fetch('/dashboard/komunitas/services/update_community.php', {
       method: 'POST',
       body: formData,
       credentials: 'same-origin'
@@ -518,7 +518,7 @@ ensureCommunityFeatureSchema();
 
   document.querySelectorAll('.join-event-btn').forEach(function(button) {
     button.addEventListener('click', async function() {
-      const response = await fetch('/dashboard/actions/community/join_event.php', {
+      const response = await fetch('/dashboard/komunitas/services/join_event.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
