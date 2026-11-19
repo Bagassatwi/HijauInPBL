@@ -52,7 +52,7 @@ function syncChallengeProgress(PDO $pdo, string $userId): array {
       UPDATE public.user_challenges
       SET progress = :progress,
           status = :status,
-          completed_at = CASE WHEN :completed THEN COALESCE(completed_at, NOW()) ELSE NULL END
+          completed_at = CASE WHEN :completed = 'true' THEN COALESCE(completed_at, NOW()) ELSE NULL END
       WHERE id = :id
     ");
     $update->execute([

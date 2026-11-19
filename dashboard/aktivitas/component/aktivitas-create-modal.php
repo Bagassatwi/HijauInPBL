@@ -69,7 +69,7 @@
             </p>
 
             <span class="mt-3 rounded-full bg-green-100 px-4 py-2 text-sm font-medium text-[#11773D]">
-              JPG, PNG • Maks 5MB
+              JPG, PNG • Maks 2MB
             </span>
 
             <input id="proofPhotoInput" name="proof_photo" type="file" accept="image/*" class="hidden" />
