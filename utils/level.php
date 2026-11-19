@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . "/utils/connection.php";
+require_once __DIR__ . "/connection.php";
 
 function getLevelThreshold(int $level): int {
   $safeLevel = max(1, $level);
