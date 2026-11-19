@@ -1,6 +1,6 @@
 <?php
 session_start();
-include_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
+include_once __DIR__ . '/connection.php';
 if (trim($_COOKIE['remember_me']) == '' || !isset($_COOKIE['remember_me'])) {
   header('Location: /login.php');
   exit;
