@@ -2,7 +2,7 @@
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/community.php';
+require_once dirname(__DIR__) . '/services/community.php';
 
 $communityId = $_GET['id'] ?? $_GET['community_id'] ?? null;
 $community = fetchCommunityById((string) ($communityId ?? ''));
