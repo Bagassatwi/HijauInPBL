@@ -18,6 +18,7 @@ function uploadActivityToSupabase(array $file): string {
     }
 
     $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
     $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
     if (!in_array($extension, $allowedExtensions, true)) {
         $extension = 'jpg';
@@ -44,6 +45,8 @@ function uploadActivityToSupabase(array $file): string {
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
+
+
 
     if ($response === false || !empty($curlError) || $httpCode >= 400) {
         throw new RuntimeException('Upload ke Supabase gagal: ' . ($curlError ?: $response ?: 'HTTP ' . $httpCode));
@@ -73,6 +76,7 @@ if (!$sessionUserId) {
 
 $payload = $_POST;
 
+
 if (empty($payload['category_id']) || empty(trim((string) ($payload['title'] ?? '')))) {
     http_response_code(400);
     echo json_encode([
@@ -93,6 +97,29 @@ if ($point <= 0 && !empty($payload['category_id'])) {
 }
 
 $photoUrl = null;
+
+if (isset($_FILES['proof_photo']) && (int)$_FILES['proof_photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+    $uploadError = (int)$_FILES['proof_photo']['error'];
+
+    if ($uploadError === UPLOAD_ERR_INI_SIZE || $uploadError === UPLOAD_ERR_FORM_SIZE) {
+        http_response_code(413);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Ukuran foto melewati batas upload server (maksimal 2MB). Perkecil ukuran foto atau ubah upload_max_filesize/post_max_size di php.ini.'
+        ]);
+        exit;
+    }
+
+    if ($uploadError !== UPLOAD_ERR_OK) {
+        http_response_code(400);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Upload bukti aktivitas gagal. Silakan pilih foto kembali.'
+        ]);
+        exit;
+    }
+}
+
 if (isset($_FILES['proof_photo']) && !empty($_FILES['proof_photo']['tmp_name'])) {
     $file = $_FILES['proof_photo'];
 
@@ -120,11 +147,12 @@ if (isset($_FILES['proof_photo']) && !empty($_FILES['proof_photo']['tmp_name']))
         exit;
     }
 
-    if ($file['size'] > 5 * 1024 * 1024) {
-        http_response_code(400);
+    if ($file['size'] > 2 * 1024 * 1024) {
+
+        http_response_code(413);
         echo json_encode([
             'status' => 'error',
-            'message' => 'Ukuran file bukti maksimal 5MB.'
+            'message' => 'Ukuran file bukti maksimal 2MB.'
         ]);
         exit;
     }

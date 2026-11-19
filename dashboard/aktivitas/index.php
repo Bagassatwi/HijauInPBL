@@ -489,8 +489,8 @@ $weeklyInsight = getWeeklyActivityInsight($pdo, $userId);
         const pointValue = Number(document.getElementById("pointInput")?.value || 0);
         const proofFile = proofInput && proofInput.files ? proofInput.files[0] : null;
 
-        if (proofFile && proofFile.size > 5 * 1024 * 1024) {
-          alert("Ukuran foto bukti maksimal 5MB.");
+        if (proofFile && proofFile.size > 2 * 1024 * 1024) {
+          alert("Ukuran foto bukti maksimal 2MB.");
           submitBtn.disabled = false;
           submitBtn.textContent = "Simpan Aktivitas";
           return;
