@@ -3,7 +3,7 @@
 header('Content-Type: application/json');
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
-require_once __DIR__ . '/dashboard/aktivitas/services/activity.php';
+require_once __DIR__ . '/activity.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
   echo json_encode(['status' => 'error', 'message' => 'Method not allowed']);
