@@ -2,7 +2,7 @@
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/services/aktivitas/activity.php';
+require_once __DIR__ . '/services/activity.php';
 
 $userId = $_SESSION['user']['id'] ?? '';
 
@@ -500,7 +500,7 @@ $weeklyInsight = getWeeklyActivityInsight($pdo, $userId);
         formData.set("point", String(pointValue));
 
         try {
-          const res = await fetch("/dashboard/services/aktivitas/create_activity.php", {
+          const res = await fetch("/dashboard/aktivitas/services/create_activity2.php", {
             method: "POST",
             body: formData,
           });
