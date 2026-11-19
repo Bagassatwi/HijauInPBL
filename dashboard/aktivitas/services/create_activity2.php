@@ -65,7 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $sessionUserId = $_SESSION['user']['id'] ?? null;
-file_put_contents('./debug.log', json_encode($_SESSION));
 if (!$sessionUserId) {
     http_response_code(401);
     echo json_encode([
