@@ -65,7 +65,7 @@ include '../../includes/navbar.php';
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
 <!-- Breadcrumb -->
 <div class="mb-6">
-<a class="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-800 transition-colors" href="#">
+<a class="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-800 transition-colors" href="../edukasi/">
 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
 <path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
 </svg>
@@ -222,12 +222,16 @@ include '../../includes/navbar.php';
 </div>
 <!-- Callout Banner with Motivational Quote -->
 <div class="mt-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-50 to-green-100/70 p-6 sm:p-7 border border-emerald-200/60 shadow-sm flex items-center justify-between">
-<div class="relative z-10 flex items-start gap-4">
-<div class="w-10 h-10 rounded-full bg-emerald-600/10 flex items-center justify-center flex-shrink-0 text-emerald-700">
-<svg class="w-6 h-6" fill="currentColor" viewbox="0 0 24 24">
-<path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A9.49 9.49 0 0 0 12 21c7 0 11-8 11-8a18.25 18.25 0 0 0-6-5m-5 11c-2.85 0-5.13-1.63-6.17-3.46C7.57 12 10.45 9.77 15.7 8.54c-.29 3.25-1.57 8.46-3.7 10.46"></path>
-</svg>
-</div>
+  <div class="relative z-10 flex items-start gap-4">
+    <div class="w-12 h-12 rounded-full bg-emerald-600/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+      <img
+        src="../../../assets/icon.png"
+        alt="HijauIn"
+        width="60"
+        height="60"
+        class="w-full h-full object-contain p-1 priority"
+      />
+    </div>
 <div>
 <p class="text-sm sm:text-[15px] font-semibold text-emerald-950 leading-relaxed">
                 Perubahan besar dimulai dari langkah-langkah kecil yang kita lakukan setiap hari.
@@ -250,21 +254,25 @@ include '../../includes/navbar.php';
 <aside class="lg:col-span-4 space-y-8">
 <!-- Author Profile Card -->
 <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-<h4 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Penulis</h4>
-<div class="flex items-center gap-3.5">
-<div class="w-12 h-12 rounded-full border-2 border-emerald-500 bg-brand-50 flex items-center justify-center text-brand-700 shadow-sm">
-<svg class="w-6 h-6" fill="currentColor" viewbox="0 0 24 24">
-<path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A9.49 9.49 0 0 0 12 21c7 0 11-8 11-8a18.25 18.25 0 0 0-6-5m-5 11c-2.85 0-5.13-1.63-6.17-3.46C7.57 12 10.45 9.77 15.7 8.54c-.29 3.25-1.57 8.46-3.7 10.46"></path>
-</svg>
-</div>
-<div>
-<div class="flex items-center gap-1.5">
-<h5 class="text-base font-bold text-slate-900">Tim HijauIn</h5>
-<span class="w-4 h-4 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">✓</span>
-</div>
-<p class="text-xs text-gray-500 mt-0.5 leading-snug">Bersama menebar inspirasi untuk hidup lebih hijau.</p>
-</div>
-</div>
+  <h4 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Penulis</h4>
+  <div class="flex items-center gap-3.5">
+    <div class="w-16 h-16 rounded-full border-2 border-emerald-500 bg-brand-50 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+      <img
+        src="../../../assets/icon.png"
+        alt="HijauIn"
+        width="60"
+        height="60"
+        class="w-full h-full object-contain p-1 priority"
+      />
+    </div>
+    <div>
+      <div class="flex items-center gap-1.5">
+        <h5 class="text-base font-bold text-slate-900">Tim HijauIn</h5>
+        <span class="w-4 h-4 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">✓</span>
+      </div>
+      <p class="text-xs text-gray-500 mt-0.5 leading-snug">Bersama menebar inspirasi untuk hidup lebih hijau.</p>
+    </div>
+  </div>
 </div>
 <!-- Social Share Section -->
 <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
@@ -349,7 +357,7 @@ include '../../includes/navbar.php';
 <p class="text-xs sm:text-sm text-emerald-800/90 mt-2 mb-5 leading-relaxed">
             Setiap langkah kecil yang kamu ambil hari ini, membawa perubahan besar untuk masa depan bumi.
           </p>
-<a class="inline-flex items-center justify-center gap-2 w-full py-3 px-4 bg-brand-800 hover:bg-brand-900 text-white font-bold text-sm rounded-xl transition-all shadow-md" href="#">
+<a class="inline-flex items-center justify-center gap-2 w-full py-3 px-4 bg-brand-800 hover:bg-brand-900 text-white font-bold text-sm rounded-xl transition-all shadow-md" href="/landpage/komunitas">
             Gabung Komunitas
             <svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20">
 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path>
@@ -440,8 +448,6 @@ include '../../includes/navbar.php';
     include '../../includes/footer.php';
 ?>
 
-<?php
-echo ($_GET['detail']);
 
 
 
