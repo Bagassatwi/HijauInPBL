@@ -29,7 +29,7 @@ $navItems = [
       <div class="mx-auto flex items-center justify-between px-16 py-6">
         
         <!-- Logo Desktop (Gunakan path absolut /assets/...) -->
-        <a href="/index.php" class="hidden lg:flex items-center gap-2">
+        <a href="/landpage/index.php" class="hidden lg:flex items-center gap-2">
           <img
             src="/assets/icon.png"
             alt="HijauIn"
