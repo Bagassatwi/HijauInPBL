@@ -1,5 +1,5 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
+require_once __DIR__ . '/connection.php';
 
 function normalizeArticleSlug(string $value): string {
   $slug = strtolower(trim($value));

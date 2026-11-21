@@ -2,7 +2,7 @@
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/community.php';
+require_once __DIR__ . '/services/community.php';
 
 $userId = $_SESSION['user']['id'] ?? '';
 $joinedCommunityIds = fetchJoinedCommunityIdsByUser($userId);
@@ -657,7 +657,7 @@ $suggestions = [
           payload.append(key, value);
         }
 
-        const response = await fetch("/dashboard/actions/community/create_community.php", {
+        const response = await fetch("/dashboard/komunitas/services/create_community.php", {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -692,7 +692,7 @@ $suggestions = [
           return;
         }
 
-        const response = await fetch("/dashboard/actions/community/join_community.php", {
+        const response = await fetch("/dashboard/komunitas/services/join_community.php", {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",

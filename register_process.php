@@ -71,7 +71,7 @@ try {
             encrypted_password,
             email_confirmed_at,
             raw_app_meta_data,
-            raw_user_meta_data,
+            raw_user_meta_data
         ) VALUES (
             '00000000-00000000-00000000-00000000',
             :id,
@@ -81,7 +81,7 @@ try {
             :password,
             NOW(),
             '{\"provider\":\"email\",\"providers\":[\"email\"]}',
-            :user_metadata,
+            :user_metadata
         )
     ");
 
@@ -95,10 +95,10 @@ try {
   $profileStmt = $pdo->prepare("
         INSERT INTO public.profiles (
             id,
-            full_name,
+            full_name
         ) VALUES (
             :id,
-            :full_name,
+            :full_name
         )
     ");
 

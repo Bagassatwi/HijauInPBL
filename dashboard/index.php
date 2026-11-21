@@ -1,9 +1,9 @@
 <?php
 
-require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
+require_once __DIR__ . '/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/level.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/services/challenge/challenge.php';
+require_once __DIR__ . '/challenge/services/challenge.php';
 
 $userId = $_SESSION['user']['id'] ?? null;
 if (!$userId) {

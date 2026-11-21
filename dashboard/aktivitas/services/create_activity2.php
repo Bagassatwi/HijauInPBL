@@ -3,7 +3,7 @@
 header('Content-Type: application/json');
 
 include_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
-include_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/services/aktivitas/activity.php';
+include_once __DIR__ . '/activity.php';
 
 function uploadActivityToSupabase(array $file): string {
     $projectUrl = getenv('PROJECT_URL');
@@ -217,7 +217,7 @@ try {
     $xpStmt = $pdo->prepare("UPDATE public.profiles SET xp = COALESCE(xp, 0) + :points WHERE id = :user_id");
     $xpStmt->execute([':points' => $point, ':user_id' => $payload['user_id']]);
 
-    require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/services/challenge/challenge.php';
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/challenge/services/challenge.php';
     $challengeUpdates = syncChallengeProgress($pdo, (string)$payload['user_id']);
     $pdo->commit();
 

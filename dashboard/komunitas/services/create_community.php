@@ -4,10 +4,9 @@
 header('Content-Type: application/json');
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/community.php';
+require_once __DIR__ . '/utils/community.php';
 
 $userId = $_SESSION['user']['id'] ?? '';
-$communityId = $_POST['community_id'] ?? '';
 
 if (empty($userId)) {
   http_response_code(401);
@@ -15,6 +14,6 @@ if (empty($userId)) {
   exit;
 }
 
-$result = joinCommunity($userId, $communityId);
+$result = createCommunity($userId, $_POST);
 http_response_code($result['success'] ? 200 : 400);
 echo json_encode($result);

@@ -351,7 +351,7 @@ $firstName = explode(' ', trim($_SESSION['user']['full_name'] ?? 'Budi'))[0];
         generateRecommendationBtn.textContent = "Mendapatkan...";
         refreshRecommendationBtn.textContent = "Mendapatkan...";
 
-        const res = await fetch("/dashboard/actions/recommendations.php", {
+        const res = await fetch("/dashboard/ai-assistant/services/recommendations.php", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -443,7 +443,7 @@ $firstName = explode(' ', trim($_SESSION['user']['full_name'] ?? 'Budi'))[0];
       formData.append("image", file);
 
       try {
-        const response = await fetch("/dashboard/actions/scan-sampah.php", {
+        const response = await fetch("/dashboard/ai-assistant/services/scan-sampah.php", {
           method: "POST",
           body: formData
         });
@@ -493,7 +493,7 @@ $firstName = explode(' ', trim($_SESSION['user']['full_name'] ?? 'Budi'))[0];
       typingIndicator.classList.remove("hidden");
 
       try {
-        const res = await fetch("/dashboard/actions/ai-action.php", {
+        const res = await fetch("/dashboard/ai-assistant/services/ai-action.php", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
