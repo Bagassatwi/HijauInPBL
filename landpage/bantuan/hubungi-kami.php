@@ -1,4 +1,4 @@
-<?php 
+<?php
 require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
 
 $supportFormMessage = '';
@@ -13,10 +13,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['support_ticket'])) {
     ];
     $allowedCategories = ['bantuan-teknis', 'eco-point', 'kolaborasi', 'csr'];
     $attachment = null;
-
-    if ($supportData['name'] === '' || !filter_var($supportData['email'], FILTER_VALIDATE_EMAIL)
+    if (
+        $supportData['name'] === '' || !filter_var($supportData['email'], FILTER_VALIDATE_EMAIL)
         || $supportData['phone'] === '' || !in_array($supportData['category'], $allowedCategories, true)
-        || $supportData['subject'] === '' || strlen($supportData['message']) < 20 || ($_POST['persetujuan'] ?? '') !== 'yes') {
+        || $supportData['subject'] === '' || strlen($supportData['message']) < 20 || ($_POST['persetujuan'] ?? '') !== 'yes'
+    ) {
         $supportFormMessage = 'Periksa kembali data wajib, persetujuan, dan pastikan deskripsi minimal 20 karakter.';
     } elseif (isset($_FILES['lampiran']) && $_FILES['lampiran']['error'] !== UPLOAD_ERR_NO_FILE) {
         $file = $_FILES['lampiran'];
@@ -26,11 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['support_ticket'])) {
         if ($file['error'] !== UPLOAD_ERR_OK || $file['size'] > 5 * 1024 * 1024 || !in_array($mime, $allowedMimes, true)) {
             $supportFormMessage = 'Lampiran harus berupa PDF, PNG, atau JPG dengan ukuran maksimal 5 MB.';
         } else {
-            $attachment = [
-                'name' => basename((string) $file['name']),
-                'mime' => $mime,
-                'content' => file_get_contents($file['tmp_name']),
-            ];
+            $file['type'] = $mime;
+            $attachment = $file;
         }
     }
 
@@ -42,9 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['support_ticket'])) {
 }
 
 // Panggil header dan navbar (naik satu level ke folder includes)
-include '../includes/header.php'; 
-include '../includes/navbar.php'; 
+include '../includes/header.php';
+include '../includes/navbar.php';
 ?>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -312,14 +311,15 @@ include '../includes/navbar.php';
                         <!-- Upload Lampiran -->
                         <div>
                             <label class="block text-xs font-bold text-gray-700 mb-1.5">Upload Lampiran Bukti <span class="font-normal text-gray-400">(Opsional - PDF, PNG, JPG maks 5MB)</span></label>
-                            <div class="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-emerald-500 transition-colors cursor-pointer bg-gray-50/50">
+                            <label for="lampiran" class="block border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-emerald-500 transition-colors cursor-pointer bg-gray-50/50">
                                 <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 mx-auto flex items-center justify-center mb-2">
                                     <i class="fa-solid fa-cloud-arrow-up"></i>
                                 </div>
                                 <span class="text-xs font-bold text-gray-800 block">Klik untuk memilih file atau seret ke sini</span>
                                 <span class="text-[11px] text-gray-400 block mt-0.5">Screenshot error aplikasi, sertifikat aksi, atau dokumen proposal kemitraan</span>
-                                <input type="file" name="lampiran" class="hidden">
-                            </div>
+                                <span id="lampiran-nama" class="mt-2 block text-xs text-emerald-800">Belum ada file dipilih</span>
+                            </label>
+                            <input id="lampiran" type="file" name="lampiran" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" class="sr-only">
                         </div>
 
                         <!-- Checkbox Persetujuan -->
@@ -404,8 +404,17 @@ include '../includes/navbar.php';
     </div>
 
 </main>
+<script>
+    document.getElementById('lampiran')?.addEventListener('change', (event) => {
+        const file = event.target.files?.[0];
+        const name = document.getElementById('lampiran-nama');
+        if (name) {
+            name.textContent = file ? file.name : 'Belum ada file dipilih';
+        }
+    });
+</script>
 
-<?php 
+<?php
 // Panggil footer (naik satu level ke folder includes)
-include '../includes/footer.php'; 
+include '../includes/footer.php';
 ?>

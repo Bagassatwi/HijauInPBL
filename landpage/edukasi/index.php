@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
-require_once dirname(__DIR__, 3) . '/utils/articles.php';
+require_once dirname(__DIR__, 2) . '/utils/articles.php';
 
 $newsletterMessage = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['education_newsletter'])) {
