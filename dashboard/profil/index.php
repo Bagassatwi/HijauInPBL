@@ -1,7 +1,7 @@
 <?php
-
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/level.php';
+session_start();
 
 $userId = $_SESSION['user']['id'] ?? null;
 if (!$userId) {
