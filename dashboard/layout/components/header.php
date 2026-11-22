@@ -57,13 +57,13 @@ $headerConfig = [
   '/dashboard/leaderboard' => [
     'title'       => 'Leaderboard 🏆',
     'subtitle'    => null,
-    'description' => 'Lihat siapa yang paling aktif menjaga bumi dan mengumpulkan Eco Point.',
+    'description' => 'Lihat siapa yang paling aktif menjaga bumi berdasarkan Eco Score.',
     'src'         => '/assets/dashboard/main.png',
   ],
   '/dashboard/leaderboard' => [
     'title'       => 'Leaderboard 🏆',
     'subtitle'    => null,
-    'description' => 'Lihat siapa yang paling aktif menjaga bumi dan mengumpulkan Eco Point.',
+    'description' => 'Lihat siapa yang paling aktif menjaga bumi berdasarkan Eco Score.',
     'src'         => '/assets/dashboard/main.png',
   ],
   '/dashboard/komunitas' => [

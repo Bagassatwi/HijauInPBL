@@ -1,6 +1,6 @@
 <div class="rounded-[24px] bg-white p-7 shadow-sm">
   <div class="mb-7 flex items-center justify-between">
-    <h3 class="text-[22px] font-semibold text-[#101828]">Insight Minggu Ini</h3>
+    <h3 class="text-[22px] font-semibold text-[#101828]">Estimasi Dampak Minggu Ini</h3>
     <button class="text-[16px] font-semibold text-[#11773D]">Lihat Detail</button>
   </div>
 

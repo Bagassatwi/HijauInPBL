@@ -24,7 +24,7 @@
         <div class="mt-5 flex items-center gap-5">
           <div class="flex items-center gap-2">
             <img src="/assets/challange/point.png" width="18" height="18" alt="" />
-            <span class="text-[14px] font-medium"><?= htmlspecialchars($featuredChallenge['pointLabel'] ?? (($featuredChallenge['point'] ?? 0) . ' Eco Point')) ?></span>
+            <span class="text-[14px] font-medium"><?= htmlspecialchars($featuredChallenge['pointLabel'] ?? (($featuredChallenge['point'] ?? 0) . ' XP')) ?></span>
           </div>
           <div class="flex items-center gap-2">
             <img src="<?= htmlspecialchars($featuredChallenge['badgeImage'] ?? '/assets/challange/ecowarrior.png') ?>" width="18" height="18" alt="" />
