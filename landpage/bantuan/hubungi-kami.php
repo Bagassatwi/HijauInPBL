@@ -1,4 +1,46 @@
 <?php 
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+
+$supportFormMessage = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['support_ticket'])) {
+    $supportData = [
+        'name' => trim((string) ($_POST['nama'] ?? '')),
+        'email' => trim((string) ($_POST['email'] ?? '')),
+        'phone' => trim((string) ($_POST['whatsapp'] ?? '')),
+        'category' => trim((string) ($_POST['kategori'] ?? '')),
+        'subject' => trim((string) ($_POST['subjek'] ?? '')),
+        'message' => trim((string) ($_POST['deskripsi'] ?? '')),
+    ];
+    $allowedCategories = ['bantuan-teknis', 'eco-point', 'kolaborasi', 'csr'];
+    $attachment = null;
+
+    if ($supportData['name'] === '' || !filter_var($supportData['email'], FILTER_VALIDATE_EMAIL)
+        || $supportData['phone'] === '' || !in_array($supportData['category'], $allowedCategories, true)
+        || $supportData['subject'] === '' || strlen($supportData['message']) < 20 || ($_POST['persetujuan'] ?? '') !== 'yes') {
+        $supportFormMessage = 'Periksa kembali data wajib, persetujuan, dan pastikan deskripsi minimal 20 karakter.';
+    } elseif (isset($_FILES['lampiran']) && $_FILES['lampiran']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $file = $_FILES['lampiran'];
+        $mime = $file['error'] === UPLOAD_ERR_OK ? (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']) : false;
+        $allowedMimes = ['application/pdf', 'image/png', 'image/jpeg'];
+
+        if ($file['error'] !== UPLOAD_ERR_OK || $file['size'] > 5 * 1024 * 1024 || !in_array($mime, $allowedMimes, true)) {
+            $supportFormMessage = 'Lampiran harus berupa PDF, PNG, atau JPG dengan ukuran maksimal 5 MB.';
+        } else {
+            $attachment = [
+                'name' => basename((string) $file['name']),
+                'mime' => $mime,
+                'content' => file_get_contents($file['tmp_name']),
+            ];
+        }
+    }
+
+    if ($supportFormMessage === '') {
+        $supportFormMessage = saveLandingFormSubmission('support_ticket', $supportData, $attachment)
+            ? 'Tiket bantuan berhasil dikirim.'
+            : 'Tiket belum dapat dikirim. Silakan coba kembali.';
+    }
+}
+
 // Panggil header dan navbar (naik satu level ke folder includes)
 include '../includes/header.php'; 
 include '../includes/navbar.php'; 
@@ -206,6 +248,10 @@ include '../includes/navbar.php';
                     </div>
 
                     <form action="" method="POST" enctype="multipart/form-data" class="space-y-5">
+                        <input type="hidden" name="support_ticket" value="1">
+                        <?php if ($supportFormMessage !== ''): ?>
+                            <p role="status" class="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800"><?= htmlspecialchars($supportFormMessage, ENT_QUOTES, 'UTF-8') ?></p>
+                        <?php endif; ?>
                         <!-- Baris 1: Nama & Email -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -278,7 +324,7 @@ include '../includes/navbar.php';
 
                         <!-- Checkbox Persetujuan -->
                         <div class="flex items-start gap-2.5 pt-2">
-                            <input type="checkbox" id="persetujuan" required class="mt-1 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                            <input type="checkbox" name="persetujuan" value="yes" id="persetujuan" required class="mt-1 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
                             <label for="persetujuan" class="text-xs text-gray-600 leading-relaxed">
                                 Saya menyetujui bahwa data yang dikirimkan akan diproses oleh tim HijauIn sesuai dengan <a href="kebijakan-privasi.php" class="text-emerald-700 font-semibold underline">Kebijakan Privasi</a> dan <a href="#" class="text-emerald-700 font-semibold underline">Pedoman Komunitas</a> kami.
                             </label>

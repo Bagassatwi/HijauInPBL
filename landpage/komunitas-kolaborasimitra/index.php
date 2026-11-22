@@ -1,4 +1,29 @@
 <?php 
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+
+$partnerFormMessage = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['partner_submission'])) {
+  $partnerData = [
+    'organization' => trim((string) ($_POST['companyName'] ?? '')),
+    'contact_name' => trim((string) ($_POST['picName'] ?? '')),
+    'email' => trim((string) ($_POST['workEmail'] ?? '')),
+    'phone' => trim((string) ($_POST['phone'] ?? '')),
+    'type' => trim((string) ($_POST['partnerType'] ?? '')),
+    'message' => trim((string) ($_POST['message'] ?? '')),
+  ];
+  $allowedPartnerTypes = ['corporate-esg', 'community-youth', 'education-campus', 'eco-vendor', 'other'];
+
+  if ($partnerData['organization'] === '' || $partnerData['contact_name'] === ''
+    || !filter_var($partnerData['email'], FILTER_VALIDATE_EMAIL) || $partnerData['phone'] === ''
+    || !in_array($partnerData['type'], $allowedPartnerTypes, true)) {
+    $partnerFormMessage = 'Periksa kembali data wajib dan tipe kemitraan yang dipilih.';
+  } else {
+    $partnerFormMessage = saveLandingFormSubmission('partnership_request', $partnerData)
+      ? 'Terima kasih! Tim Partnership HijauIn telah menerima berkas pengajuan Anda dan akan segera menghubungi nomor terdaftar.'
+      : 'Permohonan belum dapat dikirim. Silakan coba kembali.';
+  }
+}
+
 // 1. Panggil header dan navbar
 include '../includes/header.php'; 
 include '../includes/navbar.php'; 
@@ -478,36 +503,37 @@ include '../includes/Subnavigationcommunity.php';
 </div>
 <!-- Right Interactive Form -->
 <div class="lg:col-span-7">
-<form class="flex flex-col gap-space-md bg-surface p-space-lg md:p-space-xl rounded-2xl shadow-xs" id="partnerForm" onsubmit="event.preventDefault(); showSuccessFeedback();">
+<form class="flex flex-col gap-space-md bg-surface p-space-lg md:p-space-xl rounded-2xl shadow-xs" id="partnerForm" method="POST">
+<input type="hidden" name="partner_submission" value="1"/>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
 <!-- Field: Nama Perusahaan/Institusi -->
 <div class="flex flex-col gap-1.5">
 <label class="font-headline-sm text-body-sm text-on-surface" for="companyName">Nama Organisasi / Perusahaan *</label>
-<input class="w-full px-space-md py-space-sm rounded-full bg-surface-container-lowest text-on-surface font-body-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="companyName" placeholder="PT Inovasi Hijau Lestari" required="" type="text"/>
+<input class="w-full px-space-md py-space-sm rounded-full bg-surface-container-lowest text-on-surface font-body-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="companyName" name="companyName" placeholder="PT Inovasi Hijau Lestari" required="" type="text"/>
 </div>
 <!-- Field: Nama Kontak Representatif -->
 <div class="flex flex-col gap-1.5">
 <label class="font-headline-sm text-body-sm text-on-surface" for="picName">Nama Narahubung / PIC *</label>
-<input class="w-full px-space-md py-space-sm rounded-full bg-surface-container-lowest text-on-surface font-body-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="picName" placeholder="Sarah Wijaya" required="" type="text"/>
+<input class="w-full px-space-md py-space-sm rounded-full bg-surface-container-lowest text-on-surface font-body-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="picName" name="picName" placeholder="Sarah Wijaya" required="" type="text"/>
 </div>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
 <!-- Field: Email Perusahaan -->
 <div class="flex flex-col gap-1.5">
 <label class="font-headline-sm text-body-sm text-on-surface" for="workEmail">Email Bisnis / Resmi *</label>
-<input class="w-full px-space-md py-space-sm rounded-full bg-surface-container-lowest text-on-surface font-body-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="workEmail" placeholder="sarah@perusahaan.co.id" required="" type="email"/>
+<input class="w-full px-space-md py-space-sm rounded-full bg-surface-container-lowest text-on-surface font-body-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="workEmail" name="workEmail" placeholder="sarah@perusahaan.co.id" required="" type="email"/>
 </div>
 <!-- Field: Nomor Telepon / WA -->
 <div class="flex flex-col gap-1.5">
 <label class="font-headline-sm text-body-sm text-on-surface" for="phone">Nomor WhatsApp Aktif *</label>
-<input class="w-full px-space-md py-space-sm rounded-full bg-surface-container-lowest text-on-surface font-body-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="phone" placeholder="08123456789" required="" type="tel"/>
+<input class="w-full px-space-md py-space-sm rounded-full bg-surface-container-lowest text-on-surface font-body-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="phone" name="phone" placeholder="08123456789" required="" type="tel"/>
 </div>
 </div>
 <!-- Field: Tipe Kolaborasi -->
 <div class="flex flex-col gap-1.5">
 <label class="font-headline-sm text-body-sm text-on-surface" for="partnerType">Jalur Kemitraan yang Diminati *</label>
 <div class="relative">
-<select class="w-full px-space-md py-space-sm rounded-full bg-surface-container-lowest text-on-surface font-body-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-primary-container appearance-none transition-all cursor-pointer" id="partnerType" required="">
+<select class="w-full px-space-md py-space-sm rounded-full bg-surface-container-lowest text-on-surface font-body-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-primary-container appearance-none transition-all cursor-pointer" id="partnerType" name="partnerType" required="">
 <option disabled="" selected="" value="">Pilih model kolaborasi...</option>
 <option value="corporate-esg">Corporate ESG &amp; CSR (Penanaman, Offset Karbon, Audit)</option>
 <option value="community-youth">Komunitas Lingkungan / Organisasi Pemuda (Event &amp; Relawan)</option>
@@ -521,16 +547,16 @@ include '../includes/Subnavigationcommunity.php';
 <!-- Field: Pesan Ringkas -->
 <div class="flex flex-col gap-1.5">
 <label class="font-headline-sm text-body-sm text-on-surface" for="message">Deskripsi Rencana / Target Aksi</label>
-<textarea class="w-full px-space-md py-space-sm rounded-2xl bg-surface-container-lowest text-on-surface font-body-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-primary-container transition-all resize-none" id="message" placeholder="Ceritakan tujuan kolaborasi, jumlah sasaran partisipan, atau perkiraan waktu pelaksanaan program..." rows="3"></textarea>
+<textarea class="w-full px-space-md py-space-sm rounded-2xl bg-surface-container-lowest text-on-surface font-body-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-primary-container transition-all resize-none" id="message" name="message" placeholder="Ceritakan tujuan kolaborasi, jumlah sasaran partisipan, atau perkiraan waktu pelaksanaan program..." rows="3"></textarea>
 </div>
 <!-- Submit Button -->
 <button class="w-full py-space-sm px-space-lg rounded-full bg-primary text-on-primary font-label-lg text-label-lg shadow-[0_10px_20px_-5px_rgba(0,108,73,0.3)] hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center justify-center gap-2 mt-space-xs" type="submit">
 <span>Kirim Permohonan Kolaborasi</span>
 <span class="material-symbols-outlined text-[20px]">send</span>
 </button>
-<div class="hidden p-space-sm rounded-xl bg-secondary-container text-on-secondary-container font-body-sm text-body-sm text-center" id="formFeedback">
-                Terima kasih! Tim Partnership HijauIn telah menerima berkas pengajuan Anda dan akan segera menghubungi nomor terdaftar.
-              </div>
+<?php if ($partnerFormMessage !== ''): ?>
+<div role="status" class="p-space-sm rounded-xl bg-secondary-container text-on-secondary-container font-body-sm text-body-sm text-center"><?= htmlspecialchars($partnerFormMessage, ENT_QUOTES, 'UTF-8') ?></div>
+<?php endif; ?>
 </form>
 </div>
 </div>
@@ -575,20 +601,6 @@ include '../includes/Subnavigationcommunity.php';
 </div>
 </section>
 </div>
-<script>
-  function showSuccessFeedback() {
-    const feedback = document.getElementById('formFeedback');
-    const form = document.getElementById('partnerForm');
-    if (feedback) {
-      feedback.classList.remove('hidden');
-      form.reset();
-      setTimeout(() => {
-        feedback.classList.add('hidden');
-      }, 7000);
-    }
-  }
-</script>
-
 <?php 
 include '../includes/footer.php'; 
 ?>

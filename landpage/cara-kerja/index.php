@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+
 // 1. Panggil Header (Layout Atas: <head>, Navbar, Tailwind, FontAwesome)
 include '../includes/header.php';
 include '../includes/navbar.php';
@@ -36,6 +38,7 @@ $steps = [
         "desc" => "Lihat laporan dampakmu dan kontribusimu untuk bumi yang lebih baik.",
     ],
 ];
+$steps = fetchLandingPageContent('cara-kerja', 'steps', $steps);
 
 $flows = [
     [
@@ -69,6 +72,7 @@ $flows = [
         "desc" => "Dampak positifmu tercatat dan terukur",
     ],
 ];
+$flows = fetchLandingPageContent('cara-kerja', 'flows', $flows);
 
 $journeys = [
     [
@@ -121,6 +125,7 @@ $journeys = [
         "desc" => "Dapat badge baru<br />dan reward",
     ],
 ];
+$journeys = fetchLandingPageContent('cara-kerja', 'journeys', $journeys);
 
 $features = [
     [
@@ -148,6 +153,7 @@ $features = [
         "is_html" => false
     ],
 ];
+$features = fetchLandingPageContent('cara-kerja', 'features', $features);
 ?>
 <!DOCTYPE html>
 <html lang="id">

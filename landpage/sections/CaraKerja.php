@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+
 $steps = [
     [
         "num" => "1",
@@ -46,6 +48,7 @@ $steps = [
         "desc" => "Bersama-sama menciptakan<br />perubahan positif untuk<br />bumi yang lebih baik."
     ],
 ];
+$steps = fetchLandingPageContent('home', 'steps', $steps);
 ?>
 
 <section class="px-4 py-9 text-center sm:px-8 lg:px-16">

@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__, 3) . '/utils/landing_page.php';
+
 // Data detail fitur (menggantikan detailsData di TypeScript)
 $detailsData = [
     [
@@ -50,6 +52,7 @@ $detailsData = [
         ],
     ],
 ];
+$detailsData = fetchLandingPageContent('fitur', 'feature_details', $detailsData);
 ?>
 
 <!-- Pastikan FontAwesome sudah dimuat di <head> layout utama Anda, contoh:
