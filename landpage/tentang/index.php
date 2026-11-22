@@ -1,4 +1,6 @@
 <?php 
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+
 // 1. Panggil Header & Navbar
 include '../includes/header.php'; 
 include '../includes/navbar.php'; 
@@ -23,6 +25,7 @@ $values = [
         "desc" => "Menggunakan teknologi dan data untuk melacak, memahami, dan memaksimalkan dampak positif kita bersama.",
     ],
 ];
+$values = fetchLandingPageContent('tentang', 'values', $values);
 
 // Data Misi, Visi & Nilai Kami
 $missions = [
@@ -47,6 +50,7 @@ $missions = [
         ],
     ],
 ];
+$missions = fetchLandingPageContent('tentang', 'missions', $missions);
 
 // Data Perjalanan / Timeline
 $journey = [
@@ -76,6 +80,7 @@ $journey = [
         "desc" => "Terus berinovasi untuk\nmenciptakan dampak\npositif yang lebih besar\nbagi bumi.",
     ],
 ];
+$journey = fetchLandingPageContent('tentang', 'journey', $journey);
 
 // Data Statistik Dampak
 $stats = [
@@ -105,6 +110,7 @@ $stats = [
         "label" => "Pohon Ditanam",
     ],
 ];
+$stats = fetchLandingPageContent('tentang', 'stats', $stats);
 
 // Data Fitur / Mengapa HijauIn
 $features = [
@@ -129,6 +135,7 @@ $features = [
         "desc" => "Data kamu aman bersama kami dan hanya digunakan\nuntuk tujuan kebaikan.",
     ],
 ];
+$features = fetchLandingPageContent('tentang', 'features', $features);
 ?>
 
 <!DOCTYPE html>

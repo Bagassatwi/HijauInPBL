@@ -1,8 +1,30 @@
 <?php
-require_once __DIR__ . '/../includes/home-data.php';
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
 
-$landingData = hijauin_get_home_data();
-$activities = $landingData['activities'];
+$activities = [
+    [
+        "img" => "/assets/beranda/bersihpantai.png",
+        "badge" => "Bersih Bersama",
+        "title" => "Bersih Pantai Anyer",
+        "peserta" => "129 peserta",
+        "date" => "12 Mei 2024",
+    ],
+    [
+        "img" => "/assets/beranda/tanampohon.png",
+        "badge" => "Tanam Hijau",
+        "title" => "Tanam Pohon Mangrove",
+        "peserta" => "85 peserta",
+        "date" => "10 Mei 2024",
+    ],
+    [
+        "img" => "/assets/beranda/workshop.png",
+        "badge" => "Daur Ulang",
+        "title" => "Workshop Daur Ulang",
+        "peserta" => "96 peserta",
+        "date" => "08 Mei 2024",
+    ],
+];
+$activities = fetchLandingPageContent('home', 'activities', $activities);
 
 $testimonies = [
     [
@@ -36,6 +58,7 @@ $testimonies = [
         "text" => '"Aplikasinya mudah digunakan dan challenge mingguan membuatku semakin semangat menjaga bumi."',
     ],
 ];
+$testimonies = fetchLandingPageContent('home', 'testimonies', $testimonies);
 
 // Membagi testimoni menjadi grup berpasangan (2 per slide)
 $slides = array_chunk($testimonies, 2);
@@ -44,7 +67,7 @@ $slides = array_chunk($testimonies, 2);
 <section class="px-4 py-12 sm:px-8 lg:px-16 lg:py-25">
     <div data-aos="fade-up" class="rounded-[30px] bg-[#F8F9F9] p-4 shadow-[0_10px_35px_rgba(0,0,0,.06)] sm:p-8">
         <div class="flex flex-col gap-8 xl:flex-row">
-            
+
             <!-- LEFT -->
             <div data-aos="fade-right" class="w-full xl:w-[24%]">
                 <h2 class="text-[clamp(1.5rem,3vw,1.75rem)] font-semibold leading-tight text-[#0B0F1F]">
@@ -79,17 +102,16 @@ $slides = array_chunk($testimonies, 2);
                 </div>
 
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    <?php foreach ($activities as $index => $item): 
+                    <?php foreach ($activities as $index => $item):
                         $delay = $index * 150;
                     ?>
                         <div data-aos="fade-up" data-aos-delay="<?= $delay ?>" class="group">
                             <div class="relative overflow-hidden rounded-2xl">
                                 <div class="relative h-[150px] w-full">
-                                    <img 
-                                        src="<?= $item['img'] ?>" 
-                                        alt="<?= $item['title'] ?>" 
-                                        class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                    />
+                                    <img
+                                        src="<?= $item['img'] ?>"
+                                        alt="<?= $item['title'] ?>"
+                                        class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                 </div>
                                 <span class="absolute bottom-3 left-3 rounded-full bg-[#E8F7EB] px-3 py-1 text-[11px] font-semibold text-[#076635]">
                                     <?= $item['badge'] ?>
@@ -123,18 +145,17 @@ $slides = array_chunk($testimonies, 2);
                     <div class="flex">
                         <?php foreach ($slides as $slideIndex => $group): ?>
                             <div class="min-w-full space-y-5">
-                                <?php foreach ($group as $cardIndex => $item): 
+                                <?php foreach ($group as $cardIndex => $item):
                                     $cardDelay = $cardIndex * 150;
                                 ?>
                                     <div data-aos="fade-left" data-aos-delay="<?= $cardDelay ?>" class="rounded-2xl bg-[#FCFCFC] p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                                         <div class="flex items-start gap-4">
-                                            <img 
-                                                src="<?= $item['avatar'] ?>" 
-                                                alt="<?= $item['name'] ?>" 
-                                                width="52" 
-                                                height="52" 
-                                                class="rounded-full object-cover"
-                                            />
+                                            <img
+                                                src="<?= $item['avatar'] ?>"
+                                                alt="<?= $item['name'] ?>"
+                                                width="52"
+                                                height="52"
+                                                class="rounded-full object-cover" />
 
                                             <div class="flex-1">
                                                 <div class="flex items-center justify-between gap-2">
@@ -143,7 +164,7 @@ $slides = array_chunk($testimonies, 2);
                                                     </h4>
 
                                                     <div class="flex text-[12px] text-[#FFC107]">
-                                                        <?php for($star=0; $star<5; $star++): ?>
+                                                        <?php for ($star = 0; $star < 5; $star++): ?>
                                                             <i class="fa-solid fa-star"></i>
                                                         <?php endfor; ?>
                                                     </div>
@@ -164,11 +185,10 @@ $slides = array_chunk($testimonies, 2);
                 <!-- Carousel Dots Navigation -->
                 <div data-aos="fade-up" data-aos-delay="450" class="mt-6 flex justify-center gap-2" id="embla-dots">
                     <?php foreach ($slides as $index => $_): ?>
-                        <button 
-                            type="button" 
-                            data-index="<?= $index ?>" 
-                            class="embla-dot h-2 rounded-full transition-all <?= $index === 0 ? 'w-5 bg-[#22A75D]' : 'w-2 bg-[#A5D6B0]' ?>"
-                        ></button>
+                        <button
+                            type="button"
+                            data-index="<?= $index ?>"
+                            class="embla-dot h-2 rounded-full transition-all <?= $index === 0 ? 'w-5 bg-[#22A75D]' : 'w-2 bg-[#A5D6B0]' ?>"></button>
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -184,7 +204,10 @@ $slides = array_chunk($testimonies, 2);
         const emblaNode = document.getElementById("embla-testimoni");
         if (!emblaNode) return;
 
-        const options = { loop: true, align: "start" };
+        const options = {
+            loop: true,
+            align: "start"
+        };
         const emblaApi = EmblaCarousel(emblaNode, options);
 
         const dots = document.querySelectorAll(".embla-dot");

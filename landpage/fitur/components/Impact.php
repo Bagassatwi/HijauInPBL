@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__, 3) . '/utils/landing_page.php';
+
 // Data dampak nyata (menggantikan array impacts di TypeScript)
 $impacts = [
     [
@@ -37,6 +39,7 @@ $impacts = [
         "label" => "Komunitas Bergabung",
     ],
 ];
+$impacts = fetchLandingPageContent('fitur', 'impacts', $impacts);
 ?>
 
 <section class="w-full px-4 py-14 sm:px-8 md:px-12">

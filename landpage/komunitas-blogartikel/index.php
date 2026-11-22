@@ -1,5 +1,17 @@
 <!DOCTYPE html>
 <?php 
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+
+$newsletterMessage = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['community_newsletter'])) {
+  $newsletterEmail = trim((string) ($_POST['newsletter_email'] ?? ''));
+  $newsletterMessage = filter_var($newsletterEmail, FILTER_VALIDATE_EMAIL)
+    ? (saveLandingFormSubmission('community_newsletter', ['email' => $newsletterEmail])
+      ? 'Berhasil berlangganan.'
+      : 'Pendaftaran belum dapat diproses. Silakan coba kembali.')
+    : 'Masukkan alamat email yang valid.';
+}
+
 // 1. Panggil header dan navbar
 include '../includes/header.php'; 
 include '../includes/navbar.php'; 
@@ -489,15 +501,19 @@ include '../includes/Subnavigationcommunity.php';
 </div>
 <!-- Subscription Form Pill -->
 <div class="w-full lg:w-auto flex-1 max-w-md">
-<form class="flex flex-col sm:flex-row items-stretch bg-surface-container-lowest p-1.5 rounded-full shadow-md gap-2">
+<form method="POST" class="flex flex-col sm:flex-row items-stretch bg-surface-container-lowest p-1.5 rounded-full shadow-md gap-2">
+<input type="hidden" name="community_newsletter" value="1"/>
 <div class="flex items-center pl-space-md flex-1">
 <span class="material-symbols-outlined text-outline text-[20px] mr-2">mail</span>
-<input class="w-full bg-transparent font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none py-2" placeholder="Masukkan alamat emailmu..." required="" type="email"/>
+<input class="w-full bg-transparent font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none py-2" name="newsletter_email" placeholder="Masukkan alamat emailmu..." required="" type="email"/>
 </div>
 <button class="bg-primary hover:bg-secondary text-on-primary font-label-lg text-label-lg px-space-xl py-3 rounded-full transition-all shrink-0" type="submit">
               Berlangganan
             </button>
 </form>
+<?php if ($newsletterMessage !== ''): ?>
+<p role="status" class="font-body-sm text-[12px] text-tertiary mt-2"><?= htmlspecialchars($newsletterMessage, ENT_QUOTES, 'UTF-8') ?></p>
+<?php endif; ?>
 <p class="font-body-sm text-[12px] text-tertiary text-center lg:text-left mt-2 pl-space-sm">
             Privasi terlindungi. Kami menghargai kotak masuk Anda.
           </p>

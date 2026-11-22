@@ -1,17 +1,15 @@
 <?php
-require_once __DIR__ . '/../includes/home-data.php';
+require_once dirname(__DIR__) . '/includes/home-data.php';
 
-$landingData = hijauin_get_home_data();
-$stats = $landingData['stats'];
+$stats = hijauin_get_home_data()['stats'];
 ?>
 
 <section
     data-aos="fade-up"
-    class="relative z-10 -mt-8 px-4 py-8 sm:-mt-12 sm:px-8 lg:-mt-20 lg:px-16 lg:py-16"
->
+    class="relative z-10 -mt-8 px-4 py-8 sm:-mt-12 sm:px-8 lg:-mt-20 lg:px-16 lg:py-16">
     <!-- Perbaikan ada di grid-cols: memastikan di layar besar (lg ke atas) langsung 5 kolom sejajar -->
     <div class="grid grid-cols-1 gap-4 rounded-[25px] border border-[#ECECEC] bg-white p-5 shadow-lg sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 p-6">
-        <?php foreach ($stats as $index => $item): 
+        <?php foreach ($stats as $index => $item):
             // Memperbaiki operator perkalian delay yang tadinya terpotong
             $delay = $index * 150;
         ?>
@@ -19,16 +17,14 @@ $stats = $landingData['stats'];
                 data-aos="zoom-in"
                 data-aos-delay="<?= $delay ?>"
                 data-aos-duration="700"
-                class="flex flex-col items-center justify-center gap-3 rounded-2xl p-3 text-center sm:flex-row sm:justify-start sm:text-left lg:p-4"
-            >
+                class="flex flex-col items-center justify-center gap-3 rounded-2xl p-3 text-center sm:flex-row sm:justify-start sm:text-left lg:p-4">
                 <!-- Icon -->
                 <img
                     src="<?= $item['icon'] ?>"
                     alt="<?= $item['line1'] ?>"
                     width="150"
                     height="150"
-                    class="h-16 w-16 shrink-0 object-contain lg:h-16 lg:w-16"
-                />
+                    class="h-16 w-16 shrink-0 object-contain lg:h-16 lg:w-16" />
 
                 <!-- Text -->
                 <div class="min-w-0">

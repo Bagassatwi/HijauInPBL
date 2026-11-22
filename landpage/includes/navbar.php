@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+
 // Mendapatkan path URL saat ini untuk mendeteksi menu aktif
 $current_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 $active_path = ($current_path == "" || $current_path == "index.php") ? "" : explode('/', $current_path)[0];
@@ -11,6 +13,7 @@ $navItems = [
     ["href" => "komunitas", "name" => "Komunitas"],
     ["href" => "tentang", "name" => "Tentang Kami"],
 ];
+$navItems = fetchLandingPageContent('global', 'navigation', $navItems);
 ?>
 
 <!DOCTYPE html>

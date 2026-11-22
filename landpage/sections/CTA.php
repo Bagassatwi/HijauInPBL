@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+
 $features = [
     [
         "src" => "/assets/beranda/ai-rekomendasi2.png",
@@ -21,6 +23,7 @@ $features = [
         "desc" => "Ikuti tantangan seru<br />dan raih badge<br />menarik."
     ],
 ];
+$features = fetchLandingPageContent('home', 'cta_features', $features);
 ?>
 
 <section data-aos="fade-up" class="px-4 py-9 sm:px-8 lg:px-16">
