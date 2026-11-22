@@ -1,6 +1,6 @@
-<?php 
+<?php
 require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
-require_once dirname(__DIR__, 2) . '/utils/articles.php';
+require_once dirname(__DIR__, 3) . '/utils/articles.php';
 
 $newsletterMessage = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['education_newsletter'])) {
@@ -13,8 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['education_newsletter'
 }
 
 // 1. Panggil Header & Navbar
-include '../includes/header.php'; 
-include '../includes/navbar.php'; 
+include '../includes/header.php';
+include '../includes/navbar.php';
 ?>
 
 <?php
@@ -105,30 +105,26 @@ $articles = [
     ]
 ];
 $storedArticles = fetchArticles();
-if ($storedArticles !== []) {
-    $articles = array_map(static function (array $article): array {
-        $createdAt = $article['created_at'] ?? null;
-        $timestamp = $createdAt !== null ? strtotime((string) $createdAt) : false;
+$articles = ($storedArticles !== []) ? array_map(static function (array $article): array {
+    $createdAt = $article['created_at'] ?? NULL;
+    $timestamp = $createdAt !== NULL ? strtotime((string) $createdAt) : FALSE;
 
-        return [
-            'id' => $article['id'],
-            'slug' => $article['slug'],
-            'image' => $article['thumbnail'] ?: '/assets/edukasi/energi.png',
-            'tag' => $article['category_name'] ?? '',
-            'title' => $article['title'],
-            'desc' => $article['summary'],
-            'readTime' => isset($article['read_time']) ? $article['read_time'] . ' menit' : '',
-            'date' => $timestamp !== false ? date('d M Y', $timestamp) : '',
-            'content' => $article['content'],
-        ];
-    }, $storedArticles);
-} else {
-    $articles = fetchLandingPageContent('edukasi', 'articles', $articles);
-}
+    return [
+        'id' => $article['id'],
+        'slug' => $article['slug'],
+        'image' => $article['thumbnail'] ?: '/assets/edukasi/energi.png',
+        'tag' => $article['category_name'] ?? '',
+        'title' => $article['title'],
+        'desc' => $article['summary'],
+        'readTime' => isset($article['read_time']) ? $article['read_time'] . ' menit' : '',
+        'date' => $timestamp !== FALSE ? date('d M Y', $timestamp) : '',
+        'content' => $article['content'],
+    ];
+}, $storedArticles) : fetchLandingPageContent('edukasi', 'articles', $articles);
 
 // Menangani pencarian artikel
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
-$filteredArticles = array_filter($articles, function($item) use ($search) {
+$filteredArticles = array_filter($articles, function ($item) use ($search) {
     if ($search === '') return true;
     $keyword = strtolower($search);
     $title = strtolower($item['title']);
@@ -140,6 +136,7 @@ $filteredArticles = array_filter($articles, function($item) use ($search) {
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -148,6 +145,7 @@ $filteredArticles = array_filter($articles, function($item) use ($search) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 </head>
+
 <body class="bg-white flex flex-col items-center w-full">
 
     <div class="flex flex-col items-center w-full gap-12">
@@ -180,8 +178,7 @@ $filteredArticles = array_filter($articles, function($item) use ($search) {
                             name="search"
                             value="<?php echo htmlspecialchars($search); ?>"
                             placeholder="Cari artikel, topik, atau panduan..."
-                            class="flex-1 bg-transparent px-4 text-[14px] text-[#0B0F1F] placeholder:text-[#A7B0B5] focus:outline-none"
-                        />
+                            class="flex-1 bg-transparent px-4 text-[14px] text-[#0B0F1F] placeholder:text-[#A7B0B5] focus:outline-none" />
                         <button type="submit" class="flex h-12 w-[50px] -mr-1 items-center justify-center rounded-[10px] bg-[#11773D] text-white transition hover:bg-[#0E6534] cursor-pointer">
                             <i class="fa-solid fa-magnifying-glass text-[14px]"></i>
                         </button>
@@ -403,8 +400,9 @@ $filteredArticles = array_filter($articles, function($item) use ($search) {
         AOS.init();
     </script>
 </body>
+
 </html>
 
 <?php
-    include '../includes/footer.php';
+include '../includes/footer.php';
 ?>

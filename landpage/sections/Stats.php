@@ -1,41 +1,7 @@
 <?php
-require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+require_once dirname(__DIR__) . '/includes/home-data.php';
 
-$baseUrl = "";
-
-$stats = [
-    [
-        "value" => "125.430 kg",
-        "line1" => "Sampah Berhasil",
-        "line2" => "Dikelola",
-        "icon" => $baseUrl . "/assets/beranda/daun2.png",
-    ],
-    [
-        "value" => "82.340 kg",
-        "line1" => "CO₂ Berhasil",
-        "line2" => "Dikurangi",
-        "icon" => $baseUrl . "/assets/beranda/awan.png",
-    ],
-    [
-        "value" => "5.243",
-        "line1" => "Pohon Berhasil",
-        "line2" => "Ditanam",
-        "icon" => $baseUrl . "/assets/beranda/pohon.png",
-    ],
-    [
-        "value" => "15.000+",
-        "line1" => "Pengguna Aktif",
-        "line2" => "",
-        "icon" => $baseUrl . "/assets/beranda/person.png",
-    ],
-    [
-        "value" => "320+",
-        "line1" => "Komunitas",
-        "line2" => "Bergabung",
-        "icon" => $baseUrl . "/assets/beranda/bank.png",
-    ],
-];
-$stats = fetchLandingPageContent('home', 'stats', $stats);
+$stats = hijauin_get_home_data()['stats'];
 ?>
 
 <section

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../utils/connection.php';
+require_once __DIR__ . '/../../utils/landing_page.php';
 
 function hijauin_format_number($value, $suffix = '') {
   $num = (float) $value;
@@ -95,13 +96,12 @@ function hijauin_get_home_data() {
   }
 
   try {
+    $storedStats = fetchLandingPageContent('home', 'stats', $fallback['stats']);
     $summary = $GLOBALS['pdo']->query("
             SELECT
-                COALESCE(SUM(COALESCE(energy_saved, 0) + COALESCE(water_saved, 0)), 0) AS waste_saved,
                 COALESCE(SUM(COALESCE(co2_saved, 0)), 0) AS co2_saved,
                 COALESCE((SELECT COUNT(*) FROM public.profiles), 0) AS total_users,
-                COALESCE((SELECT COUNT(*) FROM public.communities), 0) AS total_communities,
-                COALESCE((SELECT COUNT(*) FROM public.user_challenges WHERE status = 'completed'), 0) AS completed_challenges
+                COALESCE((SELECT COUNT(*) FROM public.communities), 0) AS total_communities
             FROM public.eco_actions
         ")->fetch(PDO::FETCH_ASSOC);
 
@@ -147,38 +147,10 @@ function hijauin_get_home_data() {
     }
 
     $summary = $summary ?: [];
-    $stats = [
-      [
-        'value' => hijauin_format_kg((float) ($summary['waste_saved'] ?? 0)),
-        'line1' => 'Sampah Berhasil',
-        'line2' => 'Dikelola',
-        'icon' => '/assets/beranda/daun2.png',
-      ],
-      [
-        'value' => hijauin_format_kg((float) ($summary['co2_saved'] ?? 0)),
-        'line1' => 'CO₂ Berhasil',
-        'line2' => 'Dikurangi',
-        'icon' => '/assets/beranda/awan.png',
-      ],
-      [
-        'value' => hijauin_format_number((float) ($summary['completed_challenges'] ?? 0)),
-        'line1' => 'Pohon Berhasil',
-        'line2' => 'Ditanam',
-        'icon' => '/assets/beranda/pohon.png',
-      ],
-      [
-        'value' => hijauin_format_number((float) ($summary['total_users'] ?? 0), '+'),
-        'line1' => 'Pengguna Aktif',
-        'line2' => '',
-        'icon' => '/assets/beranda/person.png',
-      ],
-      [
-        'value' => hijauin_format_number((float) ($summary['total_communities'] ?? 0), '+'),
-        'line1' => 'Komunitas',
-        'line2' => 'Bergabung',
-        'icon' => '/assets/beranda/bank.png',
-      ],
-    ];
+    $stats = $storedStats;
+    $stats[1]['value'] = hijauin_format_kg((float) ($summary['co2_saved'] ?? 0));
+    $stats[3]['value'] = hijauin_format_number((float) ($summary['total_users'] ?? 0), '+');
+    $stats[4]['value'] = hijauin_format_number((float) ($summary['total_communities'] ?? 0), '+');
 
     return [
       'stats' => $stats,

@@ -187,3 +187,6 @@ CREATE TABLE public.landing_form_submissions (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT landing_form_submissions_pkey PRIMARY KEY (id)
 );
+
+CREATE INDEX IF NOT EXISTS landing_form_submissions_lookup_idx
+  ON public.landing_form_submissions (form_key, created_at DESC);
