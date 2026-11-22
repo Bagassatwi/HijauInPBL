@@ -208,6 +208,7 @@ CREATE TABLE public.community_members (
   community_id uuid,
   user_id uuid,
   joined_at timestamp with time zone DEFAULT now(),
+  role text DEFAULT 'member',
   CONSTRAINT community_members_pkey PRIMARY KEY (id),
   CONSTRAINT community_members_community_id_fkey FOREIGN KEY (community_id) REFERENCES public.communities(id),
   CONSTRAINT community_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
@@ -247,3 +248,56 @@ CREATE TABLE public.notifications (
   CONSTRAINT notifications_pkey PRIMARY KEY (id),
   CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
 );
+
+CREATE TABLE public.community_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  community_id uuid NOT NULL,
+  title text NOT NULL,
+  description text,
+  location text,
+  event_date timestamp with time zone,
+  image text,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT community_events_pkey PRIMARY KEY (id),
+  CONSTRAINT community_events_community_id_fkey FOREIGN KEY (community_id) REFERENCES public.communities(id) ON DELETE CASCADE
+);
+
+CREATE TABLE public.community_event_participants (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  event_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  joined_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT community_event_participants_pkey PRIMARY KEY (id),
+  CONSTRAINT community_event_participants_event_fkey FOREIGN KEY (event_id) REFERENCES public.community_events(id) ON DELETE CASCADE,
+  CONSTRAINT community_event_participants_user_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
+  CONSTRAINT community_event_participants_unique UNIQUE (event_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.landing_page_content (
+  page_key text NOT NULL,
+  section_key text NOT NULL,
+  content jsonb NOT NULL,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT landing_page_content_pkey PRIMARY KEY (page_key, section_key)
+);
+
+CREATE TABLE IF NOT EXISTS public.landing_form_submissions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  form_key text NOT NULL,
+  data jsonb NOT NULL,
+  attachment_path text,
+  attachment_name text,
+  status text NOT NULL DEFAULT 'new',
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT landing_form_submissions_pkey PRIMARY KEY (id)
+);
+
+ALTER TABLE public.landing_form_submissions
+  ADD COLUMN IF NOT EXISTS attachment_path text;
+
+ALTER TABLE public.landing_form_submissions
+  DROP COLUMN IF EXISTS attachment_mime;
+
+CREATE INDEX IF NOT EXISTS landing_form_submissions_lookup_idx
+  ON public.landing_form_submissions (form_key, created_at DESC);

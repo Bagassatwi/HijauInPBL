@@ -8,7 +8,7 @@
 
   <div class="mb-8 flex items-center justify-between">
     <div class="pr-8">
-      <p class="text-[16px] font-semibold text-[#667085]">Total Poin</p>
+      <p class="text-[16px] font-semibold text-[#667085]">Total XP</p>
       <div class="mt-4 flex items-center gap-2">
         <h2 class="text-[52px] font-bold leading-none text-[#11773D]"><?= (int) $userXp ?></h2>
         <span class="text-[28px] text-[#11773D]">🍃</span>
@@ -35,7 +35,7 @@
   <div class="rounded-2xl bg-[#F7FBF8] p-5">
     <div class="mb-4 flex items-center justify-between">
       <span class="text-[16px] font-semibold text-[#344054]">Target Harian</span>
-      <span class="text-[16px] font-semibold text-[#344054]"><?= $dailyTarget ?> poin</span>
+      <span class="text-[16px] font-semibold text-[#344054]"><?= $dailyTarget ?> XP</span>
     </div>
     <div class="h-[10px] overflow-hidden rounded-full bg-[#DCE7DE]">
       <div class="h-full rounded-full bg-[#11773D]" style="width: <?= $targetPercentage ?>%"></div>

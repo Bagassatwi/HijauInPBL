@@ -3,7 +3,7 @@
     <h2 class="text-[32px] font-bold text-[#101828]">Catat Aksi Hijau</h2>
     <p class="mt-5 text-[18px] font-medium leading-9 text-[#667085]">
       Mulai catat aksi kecilmu hari ini dan<br />
-      dapatkan poin serta dampak positif!
+      dapatkan XP serta memberi dampak positif!
     </p>
     <button id="openModalBtn" type="button" onclick="document.getElementById('createModal')?.showModal && document.getElementById('createModal').showModal()" class="mt-8 flex h-[56px] w-[190px] items-center justify-center gap-3 rounded-[14px] bg-[#11773D] text-[18px] font-semibold text-white hover:bg-[#0D6433]">
       ➕ Catat Aksi

@@ -71,7 +71,7 @@ try {
             encrypted_password,
             email_confirmed_at,
             raw_app_meta_data,
-            raw_user_meta_data,
+            raw_user_meta_data
         ) VALUES (
             '00000000-00000000-00000000-00000000',
             :id,
@@ -81,7 +81,7 @@ try {
             :password,
             NOW(),
             '{\"provider\":\"email\",\"providers\":[\"email\"]}',
-            :user_metadata,
+            :user_metadata
         )
     ");
 
@@ -95,10 +95,10 @@ try {
   $profileStmt = $pdo->prepare("
         INSERT INTO public.profiles (
             id,
-            full_name,
+            full_name
         ) VALUES (
             :id,
-            :full_name,
+            :full_name
         )
     ");
 
@@ -107,10 +107,52 @@ try {
     'full_name' => $name
   ]);
 
+  $refreshToken = bin2hex(random_bytes(32));
+  $hashedToken = hash('sha256', $refreshToken);
+
+  $tokenStmt = $pdo->prepare("
+      INSERT INTO auth.refresh_tokens (
+          instance_id,
+          token,
+          user_id,
+          revoked
+      ) VALUES (
+          '00000000-00000000-00000000-00000000',
+          :token,
+          :user_id,
+          FALSE
+      )
+  ");
+
+  $tokenStmt->execute([
+    'token'   => $hashedToken,
+    'user_id' => $userId
+  ]);
+
+  $stmtProfile = $pdo->prepare("
+      SELECT pro.*, au.is_super_admin 
+      FROM public.profiles pro 
+      JOIN auth.users au ON au.id = pro.id 
+      WHERE au.id = :id
+  ");
+  $stmtProfile->execute(['id' => $userId]);
+  $userProfile = $stmtProfile->fetch(PDO::FETCH_ASSOC);
+
   $pdo->commit();
 
-  $_SESSION['success'] = 'Pendaftaran berhasil! Silakan masuk.';
-  header('Location: login.php');
+  session_regenerate_id(true);
+  $_SESSION['user']          = $userProfile;
+  $_SESSION['refresh_token'] = $refreshToken;
+  $_SESSION['success']       = 'Pendaftaran berhasil!';
+
+  setcookie('remember_me', $refreshToken, [
+    'expires'  => time() + (86400 * 30),
+    'path'     => '/',
+    'httponly' => true,
+    'samesite' => 'Strict'
+  ]);
+
+  header('Location: dashboard/index.php');
   exit;
 } catch (PDOException $e) {
   if ($pdo->inTransaction()) {

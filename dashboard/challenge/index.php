@@ -1,8 +1,8 @@
 <?php
-session_start();
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/services/challenge/challenge.php';
+require_once __DIR__ . '/services/challenge.php';
 
 $userId = $_SESSION['user']['id'] ?? null;
 if (!$userId) {
@@ -151,7 +151,7 @@ foreach ($challengeRows as $row) {
       'point' => (string) $rewardPoint,
       'currentCount' => (string) min($progress, $target),
       'totalDays' => (string) $target,
-      'pointLabel' => $rewardPoint . ' Eco Point',
+      'pointLabel' => $rewardPoint . ' XP',
       'badge' => $badgeName ?: 'Eco Warrior',
       'badgeImage' => $badgeImage,
     ];
@@ -293,7 +293,7 @@ $userBadgeCount = count($userBadges);
         formData.set("challenge_id", this.dataset.challengeId || "");
 
         try {
-          const response = await fetch("/dashboard/actions/challenge/join_challenge.php", {
+          const response = await fetch("/dashboard/challenge/services/join_challenge.php", {
             method: "POST",
             body: formData,
           });

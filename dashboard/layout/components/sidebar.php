@@ -1,6 +1,9 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/level.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
 
 $userProfile = $_SESSION['user'] ?? [
   'id' => '',
@@ -15,56 +18,61 @@ $progress = getLevelProgress((int) ($userProfile['xp'] ?? 0), $levels);
 
 $navItems = [];
 
-if ($_SESSION['user']['is_super_admin']) {
-  $navItems = [
-    [
-      'name' => 'Articles',
-      'path' => '/dashboard/articles',
-      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+$navItems = ($_SESSION['user']['is_super_admin']) ? [
+  [
+    'name' => 'Articles',
+    'path' => '/dashboard/articles',
+    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
   <path d="M6.5 2H20v15H6.5A2.5 2.5 0 0 1 4 14.5v-10A2.5 2.5 0 0 1 6.5 2Z"/>
   <path d="M8 6h8"/>
   <path d="M8 10h8"/>
 </svg>'
-    ],
-    [
-      'name' => 'Categories',
-      'path' => '/dashboard/articles/categories',
-      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+  ],
+  [
+    'name' => 'Categories',
+    'path' => '/dashboard/articles/categories',
+    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
   <path d="M3 7h7l2 3h9v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
   <path d="M3 7V5a2 2 0 0 1 2-2h4l2 3"/>
 </svg>'
-    ],
-    [
-      'name' => 'Leaderboard',
-      'path' => '/dashboard/leaderboard',
-      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+  ],
+  [
+    'name' => 'Form Submissions',
+    'path' => '/dashboard/submissions',
+    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+  <path d="M4 4h16v16H4z"/>
+  <path d="M8 8h8M8 12h8M8 16h5"/>
+</svg>'
+  ],
+  [
+    'name' => 'Leaderboard',
+    'path' => '/dashboard/leaderboard',
+    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
       <path d="M8 21V7m8 14V3m-8 9h8"/>
       <path d="M6 7h12"/>
     </svg>'
-    ]
-  ];
-} else {
-  $navItems = [
-    [
-      'name' => 'Dashboard',
-      'path' => '/dashboard',
-      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+  ]
+] : [
+  [
+    'name' => 'Dashboard',
+    'path' => '/dashboard',
+    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
   <polyline points="9 22 9 12 15 12 15 22"/>
 </svg>'
-    ],
-    [
-      'name' => 'Aktivitas',
-      'path' => '/dashboard/aktivitas',
-      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 512 512" width="1em" height="1em" fill="currentColor">
+  ],
+  [
+    'name' => 'Aktivitas',
+    'path' => '/dashboard/aktivitas',
+    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 512 512" width="1em" height="1em" fill="currentColor">
       <path d="M161.35 242a16 16 0 0 1 22.62-.68c73.63 69.36 147.51 111.56 234.45 133.07 11.73-32 12.77-67.22 2.64-101.58-13.44-45.59-44.74-85.31-90.49-114.86-40.84-26.38-81.66-33.25-121.15-39.89-49.82-8.38-96.88-16.3-141.79-63.85-5-5.26-11.81-7.37-18.32-5.66-7.44 2-12.43 7.88-14.82 17.6-5.6 22.75-2 86.51 13.75 153.82 25.29 108.14 65.65 162.86 95.06 189.73 38 34.69 87.62 53.9 136.93 53.9a186 186 0 0 0 27.77-2.04c41.71-6.32 76.43-27.27 96-57.75-89.49-23.28-165.94-67.55-242-139.16a16 16 0 0 1-.65-22.65m306.08 142.19c-16.83-2.59-33.13-5.84-49-9.77a157.7 157.7 0 0 1-12.13 25.68c-.73 1.25-1.5 2.49-2.29 3.71a584 584 0 0 0 58.56 12 16 16 0 1 0 4.87-31.62z"/>
         </svg>'
-    ],
-    [
-      'name' => 'AI Assistant',
-      'path' => '/dashboard/ai-assistant',
-      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+  ],
+  [
+    'name' => 'AI Assistant',
+    'path' => '/dashboard/ai-assistant',
+    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
   <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
   <rect x="9" y="9" width="6" height="6"/>
   <line x1="9" y1="1" x2="9" y2="4"/>
@@ -76,35 +84,34 @@ if ($_SESSION['user']['is_super_admin']) {
   <line x1="1" y1="9" x2="4" y2="9"/>
   <line x1="1" y1="14" x2="4" y2="14"/>
 </svg>'
-    ],
-    [
-      'name' => 'Challenge',
-      'path' => '/dashboard/challenge',
-      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+  ],
+  [
+    'name' => 'Challenge',
+    'path' => '/dashboard/challenge',
+    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
   <circle cx="12" cy="8" r="7"/>
   <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
 </svg>'
-    ],
-    [
-      'name' => 'Komunitas',
-      'path' => '/dashboard/komunitas',
-      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+  ],
+  [
+    'name' => 'Komunitas',
+    'path' => '/dashboard/komunitas',
+    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
   <circle cx="9" cy="7" r="4"/>
   <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
   <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
 </svg>'
-    ],
-    [
-      'name' => 'Profil',
-      'path' => '/dashboard/profil',
-      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+  ],
+  [
+    'name' => 'Profil',
+    'path' => '/dashboard/profil',
+    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
   <circle cx="12" cy="7" r="4"/>
 </svg>'
-    ]
-  ];
-}
+  ]
+];
 ?>
 
 <aside

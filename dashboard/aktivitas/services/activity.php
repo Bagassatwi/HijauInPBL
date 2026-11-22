@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
 
 function getAllActivities(PDO $pdo, string $userId): array {
@@ -53,10 +54,12 @@ function createActivity(PDO $pdo, array $payload): ?array {
   $sql = "
         INSERT INTO public.eco_actions (
             user_id, category_id, title, description, point, 
-            verification_type, status, activity_date, co2_saved, water_saved, energy_saved
+            verification_type, status, activity_date, co2_saved, water_saved, energy_saved,
+            location, photo_url, image_url
         ) VALUES (
             :user_id, :category_id, :title, :description, :point, 
-            :verification_type, :status, :activity_date, :co2_saved, :water_saved, :energy_saved
+            :verification_type, :status, :activity_date, :co2_saved, :water_saved, :energy_saved,
+            :location, :photo_url, :image_url
         ) RETURNING *
     ";
 
@@ -72,7 +75,10 @@ function createActivity(PDO $pdo, array $payload): ?array {
     ':activity_date'     => $payload['activity_date'] ?? date('Y-m-d H:i:s'),
     ':co2_saved'         => (float)($payload['co2_saved'] ?? 0),
     ':water_saved'       => (float)($payload['water_saved'] ?? 0),
-    ':energy_saved'      => (float)($payload['energy_saved'] ?? 0)
+    ':energy_saved'      => (float)($payload['energy_saved'] ?? 0),
+    ':location'          => $payload['location'] ?? null,
+    ':photo_url'         => $payload['photo_url'] ?? null,
+    ':image_url'         => $payload['image_url'] ?? null
   ]);
 
   return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
@@ -104,6 +110,72 @@ function deleteActivity(PDO $pdo, string $id): bool {
 function getCategories(PDO $pdo): array {
   $stmt = $pdo->query("SELECT * FROM public.categories ORDER BY created_at ASC");
   return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function estimateActivityImpact(string $categoryName, string $title): array {
+  $category = strtolower(trim($categoryName));
+  $activity = strtolower(trim($title));
+  $impact = ['co2_saved' => 0.0, 'water_saved' => 0.0, 'energy_saved' => 0.0];
+
+  if (str_contains($activity, 'tumbler')) {
+    $impact['co2_saved'] = 0.1;
+  } elseif (str_contains($activity, 'transport')) {
+    $impact['co2_saved'] = 1.5;
+  } elseif (str_contains($activity, 'lampu') || str_contains($activity, 'listrik')) {
+    $impact['co2_saved'] = 0.03;
+    $impact['energy_saved'] = 0.06;
+  } elseif (str_contains($activity, 'air') || $category === 'penghematan') {
+    $impact['water_saved'] = 20;
+  } elseif (str_contains($activity, 'pohon') || str_contains($activity, 'tanam')) {
+    $impact['co2_saved'] = 0.02;
+  } elseif (str_contains($activity, 'sampah') || str_contains($activity, 'pilah') || $category === 'lingkungan') {
+    $impact['co2_saved'] = 0.5;
+  } elseif ($category === 'kebiasaan') {
+    $impact['co2_saved'] = 0.1;
+  } elseif ($category === 'transportasi') {
+    $impact['co2_saved'] = 1.5;
+  }
+
+  return $impact;
+}
+
+function backfillActivityImpactEstimates(PDO $pdo, string $userId): void {
+  $stmt = $pdo->prepare("
+    SELECT ea.id, ea.title, c.name AS category_name
+    FROM public.eco_actions ea
+    LEFT JOIN public.categories c ON c.id = ea.category_id
+    WHERE ea.user_id = :user_id
+      AND COALESCE(ea.co2_saved, 0) = 0
+      AND COALESCE(ea.water_saved, 0) = 0
+      AND COALESCE(ea.energy_saved, 0) = 0
+  ");
+  $stmt->execute([':user_id' => $userId]);
+
+  $update = $pdo->prepare("
+    UPDATE public.eco_actions
+    SET co2_saved = :co2_saved,
+        water_saved = :water_saved,
+        energy_saved = :energy_saved
+    WHERE id = :id
+  ");
+
+  foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $activity) {
+    $impact = estimateActivityImpact(
+      (string)($activity['category_name'] ?? ''),
+      (string)($activity['title'] ?? '')
+    );
+
+    if ($impact['co2_saved'] === 0.0 && $impact['water_saved'] === 0.0 && $impact['energy_saved'] === 0.0) {
+      continue;
+    }
+
+    $update->execute([
+      ':co2_saved' => $impact['co2_saved'],
+      ':water_saved' => $impact['water_saved'],
+      ':energy_saved' => $impact['energy_saved'],
+      ':id' => $activity['id'],
+    ]);
+  }
 }
 
 function getUserXp(PDO $pdo, string $userId): int {
@@ -139,13 +211,78 @@ function getWeeklyActivityInsight(PDO $pdo, string $userId): array {
   ];
 }
 
-function rewardUser(PDO $pdo, string $userId, int $points): bool {
-  $stmt = $pdo->prepare("UPDATE public.profiles SET xp = COALESCE(xp, 0) + :points WHERE id = :user_id");
+function rewardUser(PDO $pdo, string $userId, int $points): ?int {
+  $stmt = $pdo->prepare("
+    UPDATE public.profiles
+    SET xp = COALESCE(xp, 0) + :points
+    WHERE id = :user_id
+    RETURNING xp
+  ");
   $success = $stmt->execute([':points' => $points, ':user_id' => $userId]);
 
-  if (isset($_SESSION['user']) && $_SESSION['user']['id'] === $userId) {
-    $_SESSION['user']['xp'] = ((int)($_SESSION['user']['xp'] ?? 0)) + $points;
+  if (!$success) {
+    return null;
   }
 
-  return $success;
+  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+  if (!$row) {
+    return null;
+  }
+
+  $progress = refreshUserProgress($pdo, $userId);
+  return $progress['xp'];
+}
+
+function refreshUserProgress(PDO $pdo, string $userId): array {
+  $stmt = $pdo->prepare("SELECT xp FROM public.profiles WHERE id = :user_id LIMIT 1");
+  $stmt->execute([':user_id' => $userId]);
+  $profile = $stmt->fetch(PDO::FETCH_ASSOC);
+  if (!$profile) {
+    throw new RuntimeException('Profil pengguna tidak ditemukan.');
+  }
+  $newXp = (int)($profile['xp'] ?? 0);
+
+  $levelStmt = $pdo->prepare("
+    UPDATE public.profiles p
+    SET level = COALESCE((
+      SELECT l.level
+      FROM public.levels l
+      WHERE l.min_xp <= p.xp
+      ORDER BY l.min_xp DESC
+      LIMIT 1
+    ), 1)
+    WHERE p.id = :user_id
+    RETURNING level
+  ");
+  $levelStmt->execute([':user_id' => $userId]);
+  $levelRow = $levelStmt->fetch(PDO::FETCH_ASSOC);
+  $newLevel = (int)($levelRow['level'] ?? 1);
+
+  if (isset($_SESSION['user']) && (string)($_SESSION['user']['id'] ?? '') === $userId) {
+    $_SESSION['user']['xp'] = $newXp;
+    $_SESSION['user']['level'] = $newLevel;
+  }
+
+  return ['xp' => $newXp, 'level' => $newLevel];
+}
+
+function refreshUserEcoScore(PDO $pdo, string $userId): int {
+  $stmt = $pdo->prepare("
+    UPDATE public.profiles p
+    SET eco_score = COALESCE((
+      SELECT SUM(ea.point)
+      FROM public.eco_actions ea
+      WHERE ea.user_id = p.id AND ea.status = 'verified'
+    ), 0)
+    WHERE p.id = :user_id
+    RETURNING eco_score
+  ");
+  $stmt->execute([':user_id' => $userId]);
+  $ecoScore = $stmt->fetchColumn();
+
+  if ($ecoScore === false) {
+    throw new RuntimeException('Profil pengguna tidak ditemukan saat menghitung Eco Score.');
+  }
+
+  return (int)$ecoScore;
 }

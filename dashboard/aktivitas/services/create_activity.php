@@ -1,7 +1,9 @@
 <?php
+
 header('Content-Type: application/json');
 
 include_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
+include_once __DIR__ . '/activity.php';
 
 function uploadActivityToSupabase(array $file): string {
     $projectUrl = getenv('PROJECT_URL');
@@ -16,6 +18,7 @@ function uploadActivityToSupabase(array $file): string {
     }
 
     $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
     $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
     if (!in_array($extension, $allowedExtensions, true)) {
         $extension = 'jpg';
@@ -42,6 +45,7 @@ function uploadActivityToSupabase(array $file): string {
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
+    curl_close($ch);
 
     if ($response === false || !empty($curlError) || $httpCode >= 400) {
         throw new RuntimeException('Upload ke Supabase gagal: ' . ($curlError ?: $response ?: 'HTTP ' . $httpCode));
@@ -59,9 +63,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+$sessionUserId = $_SESSION['user']['id'] ?? null;
+if (!$sessionUserId) {
+    http_response_code(401);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Belum login.'
+    ]);
+    exit;
+}
+
 $payload = $_POST;
 
-if (empty($payload['user_id']) || empty($payload['category_id']) || empty(trim((string) ($payload['title'] ?? '')))) {
+
+if (empty($payload['category_id']) || empty(trim((string) ($payload['title'] ?? '')))) {
     http_response_code(400);
     echo json_encode([
         'status' => 'error',
@@ -70,17 +85,47 @@ if (empty($payload['user_id']) || empty($payload['category_id']) || empty(trim((
     exit;
 }
 
-$point = (int)($payload['point'] ?? 0);
-if ($point <= 0 && !empty($payload['category_id'])) {
-    $categoryStmt = $pdo->prepare('SELECT point FROM public.categories WHERE id = :id LIMIT 1');
-    $categoryStmt->execute([':id' => $payload['category_id']]);
-    $category = $categoryStmt->fetch();
-    if ($category && isset($category['point'])) {
-        $point = (int)$category['point'];
+$categoryStmt = $pdo->prepare('SELECT name, point FROM public.categories WHERE id = :id LIMIT 1');
+$categoryStmt->execute([':id' => $payload['category_id']]);
+$category = $categoryStmt->fetch(PDO::FETCH_ASSOC);
+if (!$category) {
+    http_response_code(400);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Kategori aktivitas tidak ditemukan.'
+    ]);
+    exit;
+}
+$point = (int)($category['point'] ?? 0);
+$impact = estimateActivityImpact(
+    (string)($category['name'] ?? ''),
+    trim((string)$payload['title'])
+);
+
+$photoUrl = null;
+
+if (isset($_FILES['proof_photo']) && (int)$_FILES['proof_photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+    $uploadError = (int)$_FILES['proof_photo']['error'];
+
+    if ($uploadError === UPLOAD_ERR_INI_SIZE || $uploadError === UPLOAD_ERR_FORM_SIZE) {
+        http_response_code(413);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Ukuran foto melewati batas upload server (maksimal 2MB). Perkecil ukuran foto atau ubah upload_max_filesize/post_max_size di php.ini.'
+        ]);
+        exit;
+    }
+
+    if ($uploadError !== UPLOAD_ERR_OK) {
+        http_response_code(400);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Upload bukti aktivitas gagal. Silakan pilih foto kembali.'
+        ]);
+        exit;
     }
 }
 
-$photoUrl = null;
 if (isset($_FILES['proof_photo']) && !empty($_FILES['proof_photo']['tmp_name'])) {
     $file = $_FILES['proof_photo'];
 
@@ -108,11 +153,12 @@ if (isset($_FILES['proof_photo']) && !empty($_FILES['proof_photo']['tmp_name']))
         exit;
     }
 
-    if ($file['size'] > 5 * 1024 * 1024) {
-        http_response_code(400);
+    if ($file['size'] > 2 * 1024 * 1024) {
+
+        http_response_code(413);
         echo json_encode([
             'status' => 'error',
-            'message' => 'Ukuran file bukti maksimal 5MB.'
+            'message' => 'Ukuran file bukti maksimal 2MB.'
         ]);
         exit;
     }
@@ -134,52 +180,47 @@ $activityTime = $payload['activity_time'] ?? date('H:i');
 $activityDateTime = $activityDate . ' ' . $activityTime;
 $location = trim((string) ($payload['location'] ?? ''));
 
-$sql = "
-  INSERT INTO public.eco_actions (
-    user_id, category_id, title, description, point,
-    verification_type, status, activity_date, co2_saved, water_saved, energy_saved,
-    location, photo_url, image_url
-  ) VALUES (
-    :user_id, :category_id, :title, :description, :point,
-    :verification_type, :status, :activity_date, :co2_saved, :water_saved, :energy_saved,
-    :location, :photo_url, :image_url
-  ) RETURNING *
-";
-
 try {
     $pdo->beginTransaction();
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([
-        ':user_id'           => $payload['user_id'],
-        ':category_id'       => $payload['category_id'],
-        ':title'             => trim((string) $payload['title']),
-        ':description'       => trim((string) ($payload['description'] ?? '')),
-        ':point'             => $point,
-        ':verification_type' => $payload['verification_type'] ?? 'manual',
-        ':status'            => $payload['status'] ?? 'verified',
-        ':activity_date'     => $activityDateTime,
-        ':co2_saved'         => (float)($payload['co2_saved'] ?? 0),
-        ':water_saved'       => (float)($payload['water_saved'] ?? 0),
-        ':energy_saved'      => (float)($payload['energy_saved'] ?? 0),
-        ':location'          => $location !== '' ? $location : null,
-        ':photo_url'         => $photoUrl,
-        ':image_url'         => $photoUrl,
+    $createdActivity = createActivity($pdo, [
+        'user_id' => (string)$sessionUserId,
+        'category_id' => $payload['category_id'],
+        'title' => trim((string)$payload['title']),
+        'description' => trim((string)($payload['description'] ?? '')),
+        'point' => $point,
+        'verification_type' => $payload['verification_type'] ?? 'manual',
+        'status' => $payload['status'] ?? 'verified',
+        'activity_date' => $activityDateTime,
+        'co2_saved' => $impact['co2_saved'],
+        'water_saved' => $impact['water_saved'],
+        'energy_saved' => $impact['energy_saved'],
+        'location' => $location !== '' ? $location : null,
+        'photo_url' => $photoUrl,
+        'image_url' => $photoUrl,
     ]);
 
-    $createdActivity = $stmt->fetch();
+    if (!$createdActivity) {
+        throw new RuntimeException('Aktivitas gagal disimpan.');
+    }
 
-    $xpStmt = $pdo->prepare("UPDATE public.profiles SET xp = COALESCE(xp, 0) + :points WHERE id = :user_id");
-    $xpStmt->execute([':points' => $point, ':user_id' => $payload['user_id']]);
+    rewardUser($pdo, (string)$sessionUserId, $point);
 
-    require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/services/challenge/challenge.php';
-    $challengeUpdates = syncChallengeProgress($pdo, (string)$payload['user_id']);
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/dashboard/challenge/services/challenge.php';
+    $challengeUpdates = syncChallengeProgress($pdo, (string)$sessionUserId);
+    $userProgress = refreshUserProgress($pdo, (string)$sessionUserId);
+    // backfillActivityImpactEstimates($pdo, (string)$sessionUserId);
+    $ecoScore = refreshUserEcoScore($pdo, (string)$sessionUserId);
     $pdo->commit();
 
     echo json_encode([
         'status' => 'success',
         'message' => 'Aktivitas berhasil ditambahkan.',
         'data' => $createdActivity,
-        'challenge_updates' => $challengeUpdates
+        'challenge_updates' => $challengeUpdates,
+        'xp' => $userProgress['xp'],
+        'level' => $userProgress['level'],
+        'eco_score' => $ecoScore,
+        'impact' => $impact
     ]);
     exit;
 } catch (Throwable $e) {
