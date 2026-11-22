@@ -3,6 +3,7 @@
 require_once __DIR__ . '/layout/layoutopen.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/level.php';
+require_once __DIR__ . '/aktivitas/services/activity.php';
 require_once __DIR__ . '/challenge/services/challenge.php';
 
 $userId = $_SESSION['user']['id'] ?? null;
@@ -10,6 +11,9 @@ if (!$userId) {
   header('Location: /login.php');
   exit;
 }
+
+// backfillActivityImpactEstimates($pdo, (string)$userId);
+refreshUserEcoScore($pdo, (string)$userId);
 
 try {
   $pdo->beginTransaction();
@@ -67,17 +71,6 @@ $todayStats = $todayStatsStmt->fetch(PDO::FETCH_ASSOC) ?: [
 $todayActionsCount = (int) ($todayStats['total_actions'] ?? 0);
 $todayActionsTarget = 5;
 $todayActionsPercent = min(100, round(($todayActionsCount / max(1, $todayActionsTarget)) * 100));
-
-$compareStmt = $pdo->prepare("
-  SELECT COALESCE(SUM(point), 0) AS total_points
-  FROM public.eco_actions
-  WHERE user_id = :user_id AND activity_date::date = CURRENT_DATE - INTERVAL '1 day'
-");
-$compareStmt->execute([':user_id' => $userId]);
-$yesterdayPoints = (int) ($compareStmt->fetch(PDO::FETCH_COLUMN) ?: 0);
-$ecoDelta = $ecoScore - $yesterdayPoints;
-$ecoDeltaText = ($ecoDelta >= 0 ? '▲ ' : '▼ ') . abs($ecoDelta) . ' dari kemarin';
-$ecoDeltaColorClass = $ecoDelta >= 0 ? 'text-[#11773D]' : 'text-[#D92D20]';
 
 $weeklyStmt = $pdo->prepare("
   WITH last7 AS (
@@ -270,11 +263,7 @@ $usageText = $todayActionsCount > 0
 
           <div class="mt-6">
             <h2 class="text-[64px] font-semibold leading-none text-[#11773D]"><?= number_format($ecoScore, 0, ',', '.') ?></h2>
-            <p class="mt-3 text-[18px] font-medium text-[#667085]">Eco Point</p>
-            <div class="mt-8 flex items-center gap-2 text-[18px] font-semibold <?= $ecoDeltaColorClass ?>">
-              <span><?= $ecoDelta >= 0 ? '▲' : '▼' ?></span>
-              <span><?= htmlspecialchars($ecoDeltaText) ?></span>
-            </div>
+            <p class="mt-3 text-[18px] font-medium text-[#667085]">Skor profil • terpisah dari XP</p>
           </div>
         </div>
         <div class="mx-2 w-px bg-[#EAECF0]"></div>
@@ -397,7 +386,7 @@ $usageText = $todayActionsCount > 0
       <div class="mb-6 flex gap-8">
         <div class="flex items-center gap-2">
           <span class="h-3 w-8 rounded-full bg-[#11773D]"></span>
-          <span class="text-[15px] font-medium text-[#667085]">Eco Point</span>
+          <span class="text-[15px] font-medium text-[#667085]">XP Aktivitas</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="h-3 w-8 rounded-full bg-[#7AC943]"></span>
@@ -492,7 +481,7 @@ $usageText = $todayActionsCount > 0
             <div class="h-2 rounded-full bg-[#11773D]" style="width: <?= $challengePercent ?>%;"></div>
           </div>
           <div class="flex flex-col gap-1 text-sm font-bold text-gray-600 sm:flex-row sm:gap-4">
-            <span>✓ <?= number_format($challengeReward, 0, ',', '.') ?> Eco Point</span>
+            <span>✓ <?= number_format($challengeReward, 0, ',', '.') ?> XP</span>
             <span>🏆 Badge</span>
           </div>
         </div>
@@ -533,7 +522,7 @@ $usageText = $todayActionsCount > 0
                 <div class="text-xs text-gray-500">Hari ini • <?= htmlspecialchars($activity['time']) ?></div>
               </div>
             </div>
-            <span class="text-sm font-bold text-[#11773D]">+<?= (int) $activity['point'] ?> poin</span>
+            <span class="text-sm font-bold text-[#11773D]">+<?= (int) $activity['point'] ?> XP</span>
           </div>
         <?php endforeach; ?>
       </div>

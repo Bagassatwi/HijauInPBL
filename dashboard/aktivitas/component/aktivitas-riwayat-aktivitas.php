@@ -39,7 +39,7 @@
           <div class="flex justify-between mb-4">
             <span class="font-bold text-gray-700"><?= htmlspecialchars($dateStr) ?></span>
             <span class="flex items-center gap-1 font-bold">
-              Total: <?= $totalPoint ?> poin 🍃
+              Total: <?= $totalPoint ?> XP 🍃
             </span>
           </div>
 
@@ -78,7 +78,7 @@
                   <div class="flex items-center gap-8">
                     <div class="text-right">
                       <p class="text-[20px] font-semibold text-[#11773D]">+<?= (int)$act['point'] ?></p>
-                      <p class="text-[14px] font-medium text-[#667085]">poin</p>
+                      <p class="text-[14px] font-medium text-[#667085]">XP</p>
                     </div>
                     <span class="text-[#98A2B3]">➔</span>
                   </div>

@@ -13,18 +13,31 @@
       <div class="col-span-4 overflow-y-auto bg-[#F8FBF8] p-6 space-y-3">
         <h3 class="mb-5 text-lg font-bold">Pilih Kategori Aktivitas</h3>
         <?php foreach ($categories as $index => $cat): ?>
+          <?php
+          $defaultImpactTitles = [
+            'Kebiasaan' => 'Membawa Tumbler',
+            'Penghematan' => 'Hemat Air 20 Liter',
+            'Transportasi' => 'Naik Transportasi Umum',
+            'Lingkungan' => 'Menanam Pohon',
+          ];
+          $impactTitle = $defaultImpactTitles[$cat['name']] ?? 'Membawa Tumbler';
+          $categoryImpact = estimateActivityImpact((string)$cat['name'], $impactTitle);
+          ?>
           <button type="button"
             class="category-option flex w-full items-center gap-4 rounded-2xl p-4 border border-gray-200 transition text-left <?= $index === 0 ? 'border-green-500 bg-green-50 border-2' : '' ?>"
             data-id="<?= htmlspecialchars($cat['id']) ?>"
             data-name="<?= htmlspecialchars($cat['name']) ?>"
             data-point="<?= (int)($cat['point'] ?? 20) ?>"
+            data-impact-co2="<?= htmlspecialchars((string)$categoryImpact['co2_saved']) ?>"
+            data-impact-water="<?= htmlspecialchars((string)$categoryImpact['water_saved']) ?>"
+            data-impact-energy="<?= htmlspecialchars((string)$categoryImpact['energy_saved']) ?>"
             data-desc="<?= htmlspecialchars($cat['description'] ?? '') ?>">
             <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-green-600 text-white font-bold">
               🍃
             </div>
             <div>
               <h4 class="font-semibold text-gray-900"><?= htmlspecialchars($cat['name']) ?></h4>
-              <p class="text-sm text-gray-500">+<?= (int)($cat['point'] ?? 20) ?> Eco Point</p>
+              <p class="text-sm text-gray-500">+<?= (int)($cat['point'] ?? 20) ?> XP</p>
             </div>
           </button>
         <?php endforeach; ?>
@@ -32,8 +45,8 @@
 
       <!-- Right Form -->
       <form id="activityForm"
+        data-impact-estimates="<?= htmlspecialchars(json_encode($impactEstimateByTitle), ENT_QUOTES, 'UTF-8') ?>"
         class="col-span-8 overflow-y-auto p-8 space-y-6">
-        <input class="hidden" type="text" name="user_id" value="<?php echo $_SESSION['user']['id'] ?>" id="">
         <div>
           <h3 id="selectedCategoryTitle" class="text-2xl font-bold"><?= htmlspecialchars($categories[0]['name'] ?? 'Kategori') ?></h3>
           <p id="selectedCategoryDesc" class="mt-2 leading-7 text-gray-500"><?= htmlspecialchars($categories[0]['description'] ?? '') ?></p>
@@ -102,14 +115,16 @@
         <div class="rounded-3xl bg-[#F3FAF5] p-6">
           <div class="flex items-center justify-between">
             <div>
-              <h4 class="text-lg font-bold text-[#11773D]">Estimasi Eco Point</h4>
-              <p class="mt-1 text-sm text-gray-500">Poin akan diverifikasi berdasarkan aktivitas yang dipilih.</p>
+              <h4 class="text-lg font-bold text-[#11773D]">Reward & Estimasi Dampak</h4>
+              <p class="mt-1 text-sm text-gray-500">Aktivitas terverifikasi menambah XP dan Eco Score sebesar poin kategori. XP menaikkan level.</p>
             </div>
             <div class="text-right">
               <h2 id="pointDisplay" class="text-4xl font-extrabold text-[#11773D]">+<?= (int)($categories[0]['point'] ?? 20) ?></h2>
-              <p class="font-medium text-gray-500">Eco Point</p>
+              <p class="font-medium text-gray-500">XP + Eco Score</p>
             </div>
           </div>
+          <p id="impactDisplay" class="mt-4 text-sm font-medium text-gray-600" aria-live="polite"></p>
+          <p class="mt-2 text-xs text-gray-500">Nilai dampak adalah estimasi hard-coded per aktivitas, bukan pengukuran langsung.</p>
         </div>
 
         <div class="flex items-center justify-end gap-4 pt-2">

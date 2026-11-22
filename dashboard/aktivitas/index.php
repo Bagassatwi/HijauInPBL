@@ -6,8 +6,22 @@ require_once __DIR__ . '/services/activity.php';
 
 $userId = $_SESSION['user']['id'] ?? '';
 
+// backfillActivityImpactEstimates($pdo, $userId);
 $activities = getAllActivities($pdo, $userId);
 $categories = getCategories($pdo);
+$impactEstimateByTitle = [];
+foreach (
+  [
+    'Membawa Tumbler' => 'Kebiasaan',
+    'Naik Transportasi Umum' => 'Transportasi',
+    'Hemat Air 20 Liter' => 'Penghematan',
+    'Matikan Lampu 1 Jam' => 'Penghematan',
+    'Pilah Sampah' => 'Lingkungan',
+    'Menanam Pohon' => 'Lingkungan',
+  ] as $title => $categoryName
+) {
+  $impactEstimateByTitle[$title] = estimateActivityImpact($categoryName, $title);
+}
 
 $activityImageMap = [
   'Membawa Tumbler'        => '/assets/tumbler.png',
@@ -107,7 +121,7 @@ $weeklyInsight = getWeeklyActivityInsight($pdo, $userId);
         <p id="activityDetailCategory" class="mt-1 text-base font-semibold text-[#101828]">Kebiasaan</p>
       </div>
       <div class="text-right">
-        <p class="text-sm text-[#667085]">Poin</p>
+        <p class="text-sm text-[#667085]">XP</p>
         <p id="activityDetailPoint" class="mt-1 text-xl font-bold text-[#11773D]">+20</p>
       </div>
     </div>
@@ -132,6 +146,10 @@ $weeklyInsight = getWeeklyActivityInsight($pdo, $userId);
       <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
         <p class="font-medium text-[#667085]">Status Aktivitas</p>
         <p id="activityDetailMeta" class="mt-2 text-[#344054]">-</p>
+      </div>
+      <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+        <p class="font-medium text-[#667085]">Estimasi Dampak</p>
+        <p id="activityDetailImpact" class="mt-2 text-[#344054]">-</p>
       </div>
     </div>
   </div>
@@ -181,6 +199,7 @@ $weeklyInsight = getWeeklyActivityInsight($pdo, $userId);
     const closeBtn = document.getElementById("closeModalBtn");
     const cancelBtn = document.getElementById("cancelModalBtn");
     const form = document.getElementById("activityForm");
+    const impactEstimates = JSON.parse(form?.dataset.impactEstimates || "{}");
     const submitBtn = document.getElementById("submitBtn");
     const proofInput = document.getElementById("proofPhotoInput");
     const proofFileName = document.getElementById("proofFileName");
@@ -195,6 +214,57 @@ $weeklyInsight = getWeeklyActivityInsight($pdo, $userId);
       'Transportasi': 'Naik Transportasi Umum',
       'Lingkungan': 'Menanam Pohon'
     };
+
+    function updateImpactDisplay() {
+      const selectedTitle = document.getElementById("titleInput")?.value.trim();
+      const selectedCategory = document.querySelector(".category-option.border-green-500");
+      const normalizedTitle = (selectedTitle || "").toLowerCase();
+      const titleEstimate = normalizedTitle ? Object.keys(impactEstimates).find(title => {
+        const key = title.toLowerCase();
+        return normalizedTitle.includes(key) || key.includes(normalizedTitle);
+      }) : null;
+      let impact = titleEstimate ? impactEstimates[titleEstimate] : null;
+
+      if (!impact && (normalizedTitle.includes("lampu") || normalizedTitle.includes("listrik"))) {
+        impact = impactEstimates["Matikan Lampu 1 Jam"];
+      } else if (!impact && normalizedTitle.includes("air")) {
+        impact = impactEstimates["Hemat Air 20 Liter"];
+      } else if (!impact && normalizedTitle.includes("transport")) {
+        impact = impactEstimates["Naik Transportasi Umum"];
+      } else if (!impact && normalizedTitle.includes("tumbler")) {
+        impact = impactEstimates["Membawa Tumbler"];
+      } else if (!impact && (normalizedTitle.includes("pohon") || normalizedTitle.includes("tanam"))) {
+        impact = impactEstimates["Menanam Pohon"];
+      } else if (!impact && (normalizedTitle.includes("sampah") || normalizedTitle.includes("pilah"))) {
+        impact = impactEstimates["Pilah Sampah"];
+      }
+
+      if (!impact && selectedCategory) {
+        impact = {
+          co2_saved: Number(selectedCategory.dataset.impactCo2 || 0),
+          water_saved: Number(selectedCategory.dataset.impactWater || 0),
+          energy_saved: Number(selectedCategory.dataset.impactEnergy || 0),
+        };
+      }
+      impact = impact || {
+        co2_saved: 0,
+        water_saved: 0,
+        energy_saved: 0
+      };
+      const parts = [];
+
+      if (impact.co2_saved) parts.push(`${impact.co2_saved} kg CO₂`);
+      if (impact.water_saved) parts.push(`${impact.water_saved} L air`);
+      if (impact.energy_saved) parts.push(`${impact.energy_saved} kWh`);
+
+      const display = document.getElementById("impactDisplay");
+      if (display) {
+        display.textContent = parts.length ? `Estimasi: ${parts.join(" • ")}` : "Tidak ada estimasi dampak untuk judul ini.";
+      }
+    }
+
+    document.getElementById("titleInput")?.addEventListener("input", updateImpactDisplay);
+    updateImpactDisplay();
 
     if (proofInput) {
       proofInput.addEventListener("change", function() {
@@ -262,6 +332,7 @@ $weeklyInsight = getWeeklyActivityInsight($pdo, $userId);
         document.getElementById("pointInput").value = catPoint;
         document.getElementById("pointDisplay").textContent = "+" + catPoint;
         document.getElementById("titleInput").value = defaultTitles[catName] || "";
+        updateImpactDisplay();
       });
     });
 
@@ -432,13 +503,19 @@ $weeklyInsight = getWeeklyActivityInsight($pdo, $userId);
         const detailDescription = document.getElementById("activityDetailDescription");
         const detailLocation = document.getElementById("activityDetailLocation");
         const detailMeta = document.getElementById("activityDetailMeta");
+        const detailImpact = document.getElementById("activityDetailImpact");
         const detailProofWrapper = document.getElementById("activityDetailProofWrapper");
         const detailProof = document.getElementById("activityDetailProof");
         const detailProofPlaceholder = document.getElementById("activityDetailProofPlaceholder");
 
         detailTitle.textContent = activity.title || "Aktivitas";
         detailCategory.textContent = activity.category_name || activity.category?.name || "Umum";
-        detailPoint.textContent = "+" + (activity.point || 0) + " poin";
+        detailPoint.textContent = "+" + (activity.point || 0) + " XP";
+        detailImpact.textContent = [
+          activity.co2_saved ? `${activity.co2_saved} kg CO₂` : null,
+          activity.water_saved ? `${activity.water_saved} L air` : null,
+          activity.energy_saved ? `${activity.energy_saved} kWh` : null
+        ].filter(Boolean).join(" • ") || "Tidak ada dampak tercatat.";
         detailDescription.textContent = activity.description || "Tidak ada deskripsi tambahan untuk aktivitas ini.";
         detailLocation.textContent = activity.location || "Lokasi tidak dicatat";
 
@@ -500,7 +577,7 @@ $weeklyInsight = getWeeklyActivityInsight($pdo, $userId);
         formData.set("point", String(pointValue));
 
         try {
-          const res = await fetch("/dashboard/aktivitas/services/create_activity2.php", {
+          const res = await fetch("/dashboard/aktivitas/services/create_activity.php", {
             method: "POST",
             body: formData,
           });

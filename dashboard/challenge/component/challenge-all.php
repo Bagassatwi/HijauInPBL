@@ -57,7 +57,7 @@
             <div class="flex items-center gap-2">
               <img src="/assets/challange/point.png" alt="" width="18" height="18" />
               <span class="text-[18px] font-semibold text-[#11773D]"><?= htmlspecialchars($item['point']) ?></span>
-              <span class="text-[15px] w-[100px] text-[#667085]">Eco Point</span>
+              <span class="text-[15px] w-[100px] text-[#667085]">XP</span>
             </div>
             <div class="flex items-center -ml-5 gap-2">
               <img src="<?= htmlspecialchars($item['badgeImage']) ?>" alt="" width="18" height="18" />

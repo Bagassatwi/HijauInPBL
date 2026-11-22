@@ -151,7 +151,7 @@ foreach ($challengeRows as $row) {
       'point' => (string) $rewardPoint,
       'currentCount' => (string) min($progress, $target),
       'totalDays' => (string) $target,
-      'pointLabel' => $rewardPoint . ' Eco Point',
+      'pointLabel' => $rewardPoint . ' XP',
       'badge' => $badgeName ?: 'Eco Warrior',
       'badgeImage' => $badgeImage,
     ];

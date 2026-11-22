@@ -38,6 +38,14 @@ $navItems = ($_SESSION['user']['is_super_admin']) ? [
 </svg>'
   ],
   [
+    'name' => 'Form Submissions',
+    'path' => '/dashboard/submissions',
+    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
+  <path d="M4 4h16v16H4z"/>
+  <path d="M8 8h8M8 12h8M8 16h5"/>
+</svg>'
+  ],
+  [
     'name' => 'Leaderboard',
     'path' => '/dashboard/leaderboard',
     'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="1em" height="1em">
