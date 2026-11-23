@@ -46,7 +46,7 @@ $tokenStmt->execute([
   'token'   => $hashedToken,
   'user_id' => $user['id']
 ]);
-$stmtProfile = $pdo->prepare("select * from public.profiles where id = :id");
+$stmtProfile = $pdo->prepare("select pro.*,au.is_super_admin from public.profiles pro join auth.users au on au.id = pro.id where au.id = :id");
 $stmtProfile->execute(["id" => $user['id']]);
 $userProfile = $stmtProfile->fetch(PDO::FETCH_ASSOC);
 session_regenerate_id(true);
@@ -60,6 +60,5 @@ setcookie('remember_me', $refreshToken, [
   'samesite' => 'Strict'
 ]);
 // 8. Redirect on Success
-header('Location: index.php');
-exit;
+header('Location: dashboard');
 exit;

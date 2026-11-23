@@ -1,17 +1,93 @@
--- 1. Tables without foreign keys
-CREATE TABLE public.articles (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  title text NOT NULL,
-  slug text UNIQUE,
-  thumbnail text,
-  category text,
-  summary text,
-  content text,
-  author text,
-  read_time integer,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT articles_pkey PRIMARY KEY (id)
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE auth.users (
+  instance_id uuid,
+  id uuid NOT NULL,
+  aud character varying,
+  role character varying,
+  email character varying,
+  encrypted_password character varying,
+  email_confirmed_at timestamp with time zone,
+  invited_at timestamp with time zone,
+  confirmation_token character varying,
+  confirmation_sent_at timestamp with time zone,
+  recovery_token character varying,
+  recovery_sent_at timestamp with time zone,
+  email_change_token_new character varying,
+  email_change character varying,
+  email_change_sent_at timestamp with time zone,
+  last_sign_in_at timestamp with time zone,
+  raw_app_meta_data jsonb,
+  raw_user_meta_data jsonb,
+  is_super_admin boolean,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  phone text DEFAULT NULL::character varying UNIQUE,
+  phone_confirmed_at timestamp with time zone,
+  phone_change text DEFAULT ''::character varying,
+  phone_change_token character varying DEFAULT ''::character varying,
+  phone_change_sent_at timestamp with time zone,
+  confirmed_at timestamp with time zone DEFAULT LEAST(email_confirmed_at, phone_confirmed_at),
+  email_change_token_current character varying DEFAULT ''::character varying,
+  email_change_confirm_status smallint DEFAULT 0 CHECK (email_change_confirm_status >= 0 AND email_change_confirm_status <= 2),
+  banned_until timestamp with time zone,
+  reauthentication_token character varying DEFAULT ''::character varying,
+  reauthentication_sent_at timestamp with time zone,
+  is_sso_user boolean NOT NULL DEFAULT false,
+  deleted_at timestamp with time zone,
+  is_anonymous boolean NOT NULL DEFAULT false,
+  CONSTRAINT users_pkey PRIMARY KEY (id)
 );
+
+CREATE TABLE auth.refresh_tokens (
+  instance_id uuid,
+  id bigint NOT NULL DEFAULT nextval('auth.refresh_tokens_id_seq'::regclass),
+  token character varying UNIQUE,
+  user_id character varying,
+  revoked boolean,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  parent character varying,
+  session_id uuid,
+  CONSTRAINT refresh_tokens_pkey PRIMARY KEY (id),
+  CONSTRAINT refresh_tokens_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id)
+);
+
+-- 1. Tables without foreign keys
+create table public.levels (
+  id uuid not null default gen_random_uuid(),
+  level bigint not null,
+  min_xp bigint not null,
+  title text not null,
+  photo text null,
+  created_at timestamp with time zone not null default now(),
+  constraint levels_pkey primary key (id)
+) TABLESPACE pg_default;
+
+create table public.article_category (
+  id uuid not null default gen_random_uuid (),
+  name text not null,
+  icon text not null,
+  created_at timestamp with time zone not null default now(),
+  constraint article_category_pkey primary key (id)
+) TABLESPACE pg_default;
+
+create table public.articles (
+  id uuid not null default gen_random_uuid (),
+  title text not null,
+  slug text not null,
+  thumbnail text null,
+  summary text not null,
+  content text not null,
+  author text not null,
+  read_time integer null,
+  created_at timestamp with time zone null default now(),
+  article_category_id uuid not null,
+  constraint articles_pkey primary key (id),
+  constraint articles_slug_key unique (slug),
+  constraint articles_article_category_id_fkey foreign KEY (article_category_id) references article_category (id)
+) TABLESPACE pg_default;
 
 CREATE TABLE public.badges (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -40,10 +116,11 @@ CREATE TABLE public.challenges (
   image text,
   duration integer,
   reward_point integer,
-  reward_badge text,
+  reward_badge uuid,
   created_at timestamp with time zone DEFAULT now(),
   tag text,
-  CONSTRAINT challenges_pkey PRIMARY KEY (id)
+  CONSTRAINT challenges_pkey PRIMARY KEY (id),
+  CONSTRAINT challenges_reward_badge_fkey FOREIGN KEY (reward_badge) REFERENCES public.badges(id)
 );
 
 CREATE TABLE public.communities (
@@ -56,6 +133,7 @@ CREATE TABLE public.communities (
   created_at timestamp with time zone DEFAULT now(),
   caption text,
   tags text[],
+  owner_id uuid NOT NULL,
   CONSTRAINT communities_pkey PRIMARY KEY (id)
 );
 
@@ -65,14 +143,15 @@ CREATE TABLE public.messages (
   role text CHECK (role = ANY (ARRAY['user'::text, 'model'::text])),
   content text NOT NULL,
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT messages_pkey PRIMARY KEY (id)
+  CONSTRAINT messages_pkey PRIMARY KEY (id),
+  CONSTRAINT messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
 );
 
 -- 2. Primary user profile table (Depends on auth.users)
 CREATE TABLE public.profiles (
   id uuid NOT NULL,
   full_name text,
-  avatar_url text DEFAULT 'https://bzmrlrsyezgogcjhcytz.supabase.co/storage/v1/object/public/image/ava1.png'::text,
+  avatar_url text DEFAULT ''::text,
   bio text,
   city text,
   eco_score integer DEFAULT 0,
@@ -120,7 +199,8 @@ CREATE TABLE public.user_challenges (
   completed_at timestamp with time zone,
   CONSTRAINT user_challenges_pkey PRIMARY KEY (id),
   CONSTRAINT user_challenges_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
-  CONSTRAINT user_challenges_challenge_id_fkey FOREIGN KEY (challenge_id) REFERENCES public.challenges(id)
+  CONSTRAINT user_challenges_challenge_id_fkey FOREIGN KEY (challenge_id) REFERENCES public.challenges(id),
+  CONSTRAINT user_challenges_user_challenge_unique UNIQUE (user_id, challenge_id)
 );
 
 CREATE TABLE public.community_members (
@@ -128,6 +208,7 @@ CREATE TABLE public.community_members (
   community_id uuid,
   user_id uuid,
   joined_at timestamp with time zone DEFAULT now(),
+  role text DEFAULT 'member',
   CONSTRAINT community_members_pkey PRIMARY KEY (id),
   CONSTRAINT community_members_community_id_fkey FOREIGN KEY (community_id) REFERENCES public.communities(id),
   CONSTRAINT community_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
@@ -168,7 +249,32 @@ CREATE TABLE public.notifications (
   CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
 );
 
-CREATE TABLE public.landing_page_content (
+CREATE TABLE public.community_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  community_id uuid NOT NULL,
+  title text NOT NULL,
+  description text,
+  location text,
+  event_date timestamp with time zone,
+  image text,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT community_events_pkey PRIMARY KEY (id),
+  CONSTRAINT community_events_community_id_fkey FOREIGN KEY (community_id) REFERENCES public.communities(id) ON DELETE CASCADE
+);
+
+CREATE TABLE public.community_event_participants (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  event_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  joined_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT community_event_participants_pkey PRIMARY KEY (id),
+  CONSTRAINT community_event_participants_event_fkey FOREIGN KEY (event_id) REFERENCES public.community_events(id) ON DELETE CASCADE,
+  CONSTRAINT community_event_participants_user_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
+  CONSTRAINT community_event_participants_unique UNIQUE (event_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.landing_page_content (
   page_key text NOT NULL,
   section_key text NOT NULL,
   content jsonb NOT NULL,
@@ -176,7 +282,7 @@ CREATE TABLE public.landing_page_content (
   CONSTRAINT landing_page_content_pkey PRIMARY KEY (page_key, section_key)
 );
 
-CREATE TABLE public.landing_form_submissions (
+CREATE TABLE IF NOT EXISTS public.landing_form_submissions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   form_key text NOT NULL,
   data jsonb NOT NULL,
@@ -187,5 +293,16 @@ CREATE TABLE public.landing_form_submissions (
   CONSTRAINT landing_form_submissions_pkey PRIMARY KEY (id)
 );
 
+
 CREATE INDEX IF NOT EXISTS landing_form_submissions_lookup_idx
   ON public.landing_form_submissions (form_key, created_at DESC);
+
+ALTER TABLE public.landing_form_submissions
+  ADD COLUMN IF NOT EXISTS attachment_path text;
+
+ALTER TABLE public.landing_form_submissions
+  DROP COLUMN IF EXISTS attachment_mime;
+
+CREATE INDEX IF NOT EXISTS landing_form_submissions_lookup_idx
+  ON public.landing_form_submissions (form_key, created_at DESC);
+
