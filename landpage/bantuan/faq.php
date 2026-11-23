@@ -1,4 +1,6 @@
 <?php 
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+
 // Panggil header dan navbar (naik satu level ke folder includes)
 include '../includes/header.php'; 
 include '../includes/navbar.php'; 
@@ -111,6 +113,7 @@ $faqData = [
         ]
     ],
 ];
+$faqData = fetchLandingPageContent('bantuan-faq', 'categories', $faqData);
 ?>
 <head>
     <meta charset="UTF-8">

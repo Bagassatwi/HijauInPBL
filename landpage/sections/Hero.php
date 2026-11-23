@@ -1,3 +1,11 @@
+<?php
+require_once __DIR__ . '/../includes/home-data.php';
+
+$landingData = hijauin_get_home_data();
+$heroUsers = (int) ($landingData['hero_users'] ?? 0);
+$heroAvatars = $landingData['hero_avatars'] ?? [];
+?>
+
 <!-- ================= HERO SECTION ================= -->
     <section class="relative w-full mx-auto px-16 pt-12 pb-20 flex flex-col lg:flex-row items-center justify-between">
         <div class="w-full lg:w-1/2 text-left z-10">
@@ -40,14 +48,13 @@
         <!-- Bagian Avatar & Pengguna Aktif -->
         <div class="flex items-center gap-4 mt-8">
             <div class="flex -space-x-3 overflow-hidden">
-                <img class="inline-block h-10 w-10 rounded-full ring-2 ring-white object-cover" src="/assets/ava1.jpg" alt="" />
-                <img class="inline-block h-10 w-10 rounded-full ring-2 ring-white object-cover" src="/assets/ava2.jpg" alt="" />
-                <img class="inline-block h-10 w-10 rounded-full ring-2 ring-white object-cover" src="/assets/ava3.jpg" alt="" />
-                <img class="inline-block h-10 w-10 rounded-full ring-2 ring-white object-cover" src="/assets/ava4.jpg" alt="" />
+                <?php foreach (array_slice($heroAvatars, 0, 4) as $avatar): ?>
+                    <img class="inline-block h-10 w-10 rounded-full ring-2 ring-white object-cover" src="<?= htmlspecialchars($avatar) ?>" alt="Pengguna HijauIn" />
+                <?php endforeach; ?>
             </div>
             <div>
                 <p class="text-xs text-gray-500 font-medium">Bergabung bersama</p>
-                <p class="text-sm font-bold text-gray-900">15.000+ pengguna peduli bumi</p>
+                <p class="text-sm font-bold text-gray-900"><?= number_format($heroUsers, 0, ',', '.') ?>+ pengguna peduli bumi</p>
             </div>
         </div>
         </div>

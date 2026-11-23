@@ -293,6 +293,10 @@ CREATE TABLE IF NOT EXISTS public.landing_form_submissions (
   CONSTRAINT landing_form_submissions_pkey PRIMARY KEY (id)
 );
 
+
+CREATE INDEX IF NOT EXISTS landing_form_submissions_lookup_idx
+  ON public.landing_form_submissions (form_key, created_at DESC);
+
 ALTER TABLE public.landing_form_submissions
   ADD COLUMN IF NOT EXISTS attachment_path text;
 
@@ -301,3 +305,4 @@ ALTER TABLE public.landing_form_submissions
 
 CREATE INDEX IF NOT EXISTS landing_form_submissions_lookup_idx
   ON public.landing_form_submissions (form_key, created_at DESC);
+

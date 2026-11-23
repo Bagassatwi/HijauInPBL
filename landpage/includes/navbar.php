@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+
 // Mendapatkan path URL saat ini untuk mendeteksi menu aktif
 $current_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 $active_path = ($current_path == "" || $current_path == "index.php") ? "" : explode('/', $current_path)[0];
@@ -11,6 +13,7 @@ $navItems = [
     ["href" => "komunitas", "name" => "Komunitas"],
     ["href" => "tentang", "name" => "Tentang Kami"],
 ];
+$navItems = fetchLandingPageContent('global', 'navigation', $navItems);
 ?>
 
 <!DOCTYPE html>
@@ -29,7 +32,7 @@ $navItems = [
       <div class="mx-auto flex items-center justify-between px-16 py-6">
         
         <!-- Logo Desktop (Gunakan path absolut /assets/...) -->
-        <a href="/index.php" class="hidden lg:flex items-center gap-2">
+        <a href="/landpage/index.php" class="hidden lg:flex items-center gap-2">
           <img
             src="/assets/icon.png"
             alt="HijauIn"

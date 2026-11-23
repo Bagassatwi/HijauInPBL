@@ -42,12 +42,12 @@
             <h3 class="mb-4 text-[15px] font-semibold">Jelajahi</h3>
 
             <ul class="space-y-2 text-[13px] leading-6 text-[#D8EEE0]">
-              <li><a href="/index.php" class="hover:underline">Beranda</a></li>
-              <li><a href="#" class="hover:underline">Fitur</a></li>
+              <li><a href="/landpage/index.php" class="hover:underline">Beranda</a></li>
+              <li><a href="/landpage/fitur/index.php" class="hover:underline">Fitur</a></li>
               <li><a href="/landpage/cara-kerja/index.php" class="hover:underline">Cara Kerja</a></li>
-              <li><a href="#" class="hover:underline">Edukasi</a></li>
-              <li><a href="#" class="hover:underline">Komunitas</a></li>
-              <li><a href="#" class="hover:underline">Tentang Kami</a></li>
+              <li><a href="/landpage/edukasi/index.php" class="hover:underline">Edukasi</a></li>
+              <li><a href="/landpage/komunitas/index.php" class="hover:underline">Komunitas</a></li>
+              <li><a href="/landpage/tentang-kami/index.php" class="hover:underline">Tentang Kami</a></li>
             </ul>
           </div>
 
@@ -56,11 +56,11 @@
             <h3 class="mb-4 text-[15px] font-semibold">Bantuan</h3>
 
             <ul class="space-y-2 text-[13px] leading-6 text-[#D8EEE0]">
-              <li><a href="#" class="hover:underline">FAQ</a></li>
-              <li><a href="#" class="hover:underline">Pusat Bantuan</a></li>
-              <li><a href="#" class="hover:underline">Kebijakan Privasi</a></li>
-              <li><a href="#" class="hover:underline">Syarat & Ketentuan</a></li>
-              <li><a href="#" class="hover:underline">Hubungi Kami</a></li>
+              <li><a href="/landpage/bantuan/faq.php" class="hover:underline">FAQ</a></li>
+              <li><a href="/landpage/bantuan/pusat-bantuan.php" class="hover:underline">Pusat Bantuan</a></li>
+              <li><a href="/landpage/bantuan/kebijakan-privasi.php" class="hover:underline">Kebijakan Privasi</a></li>
+              <li><a href="/landpage/bantuan/syarat-ketentuan.php" class="hover:underline">Syarat & Ketentuan</a></li>
+              <li><a href="/landpage/bantuan/hubungi-kami.php" class="hover:underline">Hubungi Kami</a></li>
             </ul>
           </div>
 

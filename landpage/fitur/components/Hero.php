@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__, 3) . '/utils/landing_page.php';
+
 // Data untuk fitur-fitur di section Hero (jika ingin digunakan atau dirender dinamis)
 $features = [
     [
@@ -44,6 +46,7 @@ $features = [
         "className" => "top-24 left-6",
     ],
 ];
+$features = fetchLandingPageContent('fitur', 'hero_features', $features);
 ?>
 
 <!-- Pastikan FontAwesome sudah dimuat di <head> layout utama Anda, contoh:

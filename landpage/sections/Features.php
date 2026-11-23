@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+
 $features = [
     [
         "src" => "/assets/beranda/catataksi.png",
@@ -31,6 +33,7 @@ $features = [
         "desc" => "Lihat laporan dampak positif dari setiap aksi yang kamu lakukan.",
     ],
 ];
+$features = fetchLandingPageContent('home', 'features', $features);
 ?>
 
 <section class="px-4 py-9 text-center sm:px-8 lg:px-16">

@@ -1,7 +1,20 @@
-<?php 
+<?php
+require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
+require_once dirname(__DIR__, 2) . '/utils/articles.php';
+
+$newsletterMessage = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['education_newsletter'])) {
+    $newsletterEmail = trim((string) ($_POST['newsletter_email'] ?? ''));
+    $newsletterMessage = filter_var($newsletterEmail, FILTER_VALIDATE_EMAIL)
+        ? (saveLandingFormSubmission('education_newsletter', ['email' => $newsletterEmail])
+            ? 'Berhasil berlangganan.'
+            : 'Pendaftaran belum dapat diproses. Silakan coba kembali.')
+        : 'Masukkan alamat email yang valid.';
+}
+
 // 1. Panggil Header & Navbar
-include '../includes/header.php'; 
-include '../includes/navbar.php'; 
+include '../includes/header.php';
+include '../includes/navbar.php';
 ?>
 
 <?php
@@ -13,6 +26,7 @@ $topics = [
     ["icon" => "fa-leaf text-[#11773D] text-sm", "label" => "Gaya Hidup Hijau"],
     ["icon" => "fa-tree text-green-700 text-sm", "label" => "Konservasi Alam"],
 ];
+$topics = fetchLandingPageContent('edukasi', 'topics', $topics);
 
 // Data array untuk video edukasi pilihan
 $videos = [
@@ -21,6 +35,7 @@ $videos = [
     ["img" => "/assets/edukasi/caramenanampohon.png", "title" => "Cara Menanam Pohon\ndengan Benar", "dur" => "07:12", "views" => "1.9K ditonton"],
     ["img" => "/assets/edukasi/laut.png", "title" => "Lindungi Laut, Lindungi\nKehidupan", "dur" => "04:58", "views" => "1.8K ditonton"],
 ];
+$videos = fetchLandingPageContent('edukasi', 'videos', $videos);
 
 // Data array untuk kategori edukasi
 $categories = [
@@ -31,6 +46,7 @@ $categories = [
     ["icon" => "/assets/beranda/pohon.png", "name" => "Konservasi Alam", "count" => "21 artikel"],
     ["icon" => "/assets/edukasi/love.png", "name" => "Kesehatan Lingkungan", "count" => "14 artikel"],
 ];
+$categories = fetchLandingPageContent('edukasi', 'categories', $categories);
 
 // Data array untuk infografis populer
 $infographics = [
@@ -39,6 +55,7 @@ $infographics = [
     ["img" => "/assets/edukasi/daur.png", "title" => "Daur Ulang", "desc" => "Proses sederhana,\n dampak luar biasa", "views" => "1.5K dilihat", "bg" => "bg-[#f7fee7]"],
     ["img" => "/assets/edukasi/pohon.png", "title" => "Manfaat Menanam Pohon", "desc" => "Untuk bumi yang\n lebih baik", "views" => "1.8K dilihat", "bg" => "bg-[#ecfdf5]"],
 ];
+$infographics = fetchLandingPageContent('edukasi', 'infographics', $infographics);
 
 // Simulasi data artikel (biasanya diambil dari database)
 $articles = [
@@ -87,10 +104,27 @@ $articles = [
         "content" => [["text" => "mengenal gaya hidup zero waste untuk pemula"]]
     ]
 ];
+$storedArticles = fetchArticles();
+$articles = ($storedArticles !== []) ? array_map(static function (array $article): array {
+    $createdAt = $article['created_at'] ?? NULL;
+    $timestamp = $createdAt !== NULL ? strtotime((string) $createdAt) : FALSE;
+
+    return [
+        'id' => $article['id'],
+        'slug' => $article['slug'],
+        'image' => $article['thumbnail'] ?: '/assets/edukasi/energi.png',
+        'tag' => $article['category_name'] ?? '',
+        'title' => $article['title'],
+        'desc' => $article['summary'],
+        'readTime' => isset($article['read_time']) ? $article['read_time'] . ' menit' : '',
+        'date' => $timestamp !== FALSE ? date('d M Y', $timestamp) : '',
+        'content' => $article['content'],
+    ];
+}, $storedArticles) : fetchLandingPageContent('edukasi', 'articles', $articles);
 
 // Menangani pencarian artikel
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
-$filteredArticles = array_filter($articles, function($item) use ($search) {
+$filteredArticles = array_filter($articles, function ($item) use ($search) {
     if ($search === '') return true;
     $keyword = strtolower($search);
     $title = strtolower($item['title']);
@@ -102,6 +136,7 @@ $filteredArticles = array_filter($articles, function($item) use ($search) {
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -110,6 +145,7 @@ $filteredArticles = array_filter($articles, function($item) use ($search) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 </head>
+
 <body class="bg-white flex flex-col items-center w-full">
 
     <div class="flex flex-col items-center w-full gap-12">
@@ -142,8 +178,7 @@ $filteredArticles = array_filter($articles, function($item) use ($search) {
                             name="search"
                             value="<?php echo htmlspecialchars($search); ?>"
                             placeholder="Cari artikel, topik, atau panduan..."
-                            class="flex-1 bg-transparent px-4 text-[14px] text-[#0B0F1F] placeholder:text-[#A7B0B5] focus:outline-none"
-                        />
+                            class="flex-1 bg-transparent px-4 text-[14px] text-[#0B0F1F] placeholder:text-[#A7B0B5] focus:outline-none" />
                         <button type="submit" class="flex h-12 w-[50px] -mr-1 items-center justify-center rounded-[10px] bg-[#11773D] text-white transition hover:bg-[#0E6534] cursor-pointer">
                             <i class="fa-solid fa-magnifying-glass text-[14px]"></i>
                         </button>
@@ -186,7 +221,7 @@ $filteredArticles = array_filter($articles, function($item) use ($search) {
             <?php if (!empty($filteredArticles)): ?>
                 <div class="grid grid-cols-4 gap-6">
                     <?php foreach ($filteredArticles as $index => $item): ?>
-                        <a href="edukasi-detail.php?slug=<?php echo $item['slug']; ?>" data-aos="fade-up" data-aos-delay="<?php echo $index * 150; ?>" data-aos-duration="800" class="group block cursor-pointer overflow-hidden rounded-[18px] border border-[#E8ECEA] bg-white transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
+                        <a href="detail?detail=<?php echo $item['slug']; ?>" data-aos="fade-up" data-aos-delay="<?php echo $index * 150; ?>" data-aos-duration="800" class="group block cursor-pointer overflow-hidden rounded-[18px] border border-[#E8ECEA] bg-white transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
                             <!-- Image -->
                             <div class="relative h-[320px] overflow-hidden">
                                 <img src="<?php echo htmlspecialchars($item['image']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -337,12 +372,16 @@ $filteredArticles = array_filter($articles, function($item) use ($search) {
 
                 <!-- Center -->
                 <div class="flex w-[34%] flex-col justify-center" data-aos="fade-up" data-aos-delay="250" data-aos-duration="800">
-                    <div class="flex h-[52px] overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-sm">
-                        <input type="email" placeholder="Masukkan email kamu" class="flex-1 px-5 text-[14px] outline-none" />
-                        <button class="bg-[#11773D] px-6 text-[14px] font-semibold text-white transition-colors duration-300 hover:bg-[#0E6534] cursor-pointer">
+                    <form method="POST" class="flex h-[52px] overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-sm">
+                        <input type="hidden" name="education_newsletter" value="1" />
+                        <input type="email" name="newsletter_email" required placeholder="Masukkan email kamu" class="flex-1 px-5 text-[14px] outline-none" />
+                        <button type="submit" class="bg-[#11773D] px-6 text-[14px] font-semibold text-white transition-colors duration-300 hover:bg-[#0E6534] cursor-pointer">
                             Berlangganan
                         </button>
-                    </div>
+                    </form>
+                    <?php if ($newsletterMessage !== ''): ?>
+                        <p role="status" class="mt-2 text-sm text-[#076635]"><?= htmlspecialchars($newsletterMessage, ENT_QUOTES, 'UTF-8') ?></p>
+                    <?php endif; ?>
                     <p class="mt-3 flex items-center gap-2 text-[12px] text-[#667085]">
                         <i class="fa-solid fa-lock text-[#11773D]"></i> Kami tidak akan membagikan email kamu ke pihak lain.
                     </p>
@@ -361,8 +400,9 @@ $filteredArticles = array_filter($articles, function($item) use ($search) {
         AOS.init();
     </script>
 </body>
+
 </html>
 
 <?php
-    include '../includes/footer.php';
+include '../includes/footer.php';
 ?>

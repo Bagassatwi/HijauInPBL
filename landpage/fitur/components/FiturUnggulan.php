@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__, 3) . '/utils/landing_page.php';
+
 // Data fitur (menggantikan array features di TypeScript)
 $features = [
     [
@@ -42,6 +44,7 @@ $features = [
         "desc" => "Akses artikel, infografis, video, dan tips untuk hidup lebih ramah lingkungan.",
     ],
 ];
+$features = fetchLandingPageContent('fitur', 'features', $features);
 ?>
 
 <section class="px-16 py-9">

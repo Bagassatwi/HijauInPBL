@@ -212,7 +212,7 @@ $events = [
                         $words = explode(' ', $com['name']);
                         $logoText = strtoupper(substr($words[0], 0, 1) . (isset($words[1]) ? substr($words[1], 0, 1) : ''));
                     ?>
-                        <a href="komunitas-detail.php?slug=<?php echo $com['id']; ?>" data-aos="fade-up" data-aos-delay="<?php echo $idx * 150; ?>" data-aos-duration="800" class="group relative overflow-hidden rounded-[18px] border border-[#E8ECEA] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer">
+                       <a href="/landpage/komunitas/detail?slug=<?php echo $com['id']; ?>" data-aos="fade-up" data-aos-delay="<?php echo $idx * 150; ?>" data-aos-duration="800" class="group relative overflow-hidden rounded-[18px] border border-[#E8ECEA] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer">
                             <div class="relative h-[195px] overflow-hidden rounded-t-[18px]">
                                 <img src="<?php echo htmlspecialchars($com['image']); ?>" alt="<?php echo htmlspecialchars($com['name']); ?>" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" />
                             </div>
