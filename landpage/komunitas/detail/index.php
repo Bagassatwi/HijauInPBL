@@ -679,13 +679,11 @@ try {
         </div>
       </div>
       <!-- CTA Button -->
-      <div class="z-10 w-full md:w-auto">
-        <button
-          class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-brand-900 hover:bg-brand-800 text-white text-sm font-semibold rounded-xl shadow-md transition">
-          <span>Gabung Komunitas</span>
-          <i class="w-4 h-4" data-lucide="user-plus"></i>
-        </button>
-      </div>
+      <a href="/register.php"
+        class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-brand-900 hover:bg-brand-800 text-white text-sm font-semibold rounded-xl shadow-md transition">
+        <span>Gabung Komunitas</span>
+        <i class="w-4 h-4" data-lucide="user-plus"></i>
+      </a>
     </div>
   </section>
   <!-- END: BottomJoinBanner -->
