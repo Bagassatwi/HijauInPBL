@@ -4,6 +4,25 @@ require_once __DIR__ . '/../includes/home-data.php';
 $landingData = hijauin_get_home_data();
 $heroUsers = (int) ($landingData['hero_users'] ?? 0);
 $heroAvatars = $landingData['hero_avatars'] ?? [];
+$heroFallback = [
+    'badge' => 'Platform Gaya Hidup Ramah Lingkungan',
+    'title_before' => 'Ubah Kebiasaan Kecil Menjadi',
+    'title_highlight' => 'Dampak Besar',
+    'title_after' => 'Untuk Bumi',
+    'description' => 'HijauIn membantumu mencatat aksi nyata harianmu setiap hari, meraih skor dampak, dan wujudkan Eco Score, demi membangun bumi yang lebih hijau.',
+    'image' => '/assets/beranda/hero.png',
+    'image_alt' => 'Ilustrasi Bumi HijauIn',
+];
+$heroContent = array_merge(
+    $heroFallback,
+    fetchLandingPageContent('home', 'hero', $heroFallback)
+);
+
+foreach ($heroFallback as $key => $fallbackValue) {
+    if (!isset($heroContent[$key]) || !is_scalar($heroContent[$key])) {
+        $heroContent[$key] = $fallbackValue;
+    }
+}
 ?>
 
 <!-- ================= HERO SECTION ================= -->
@@ -11,22 +30,24 @@ $heroAvatars = $landingData['hero_avatars'] ?? [];
         <div class="w-full lg:w-1/2 text-left z-10">
             <div class="inline-flex items-center gap-2 px-4 py-2 mb-6 text-xs font-semibold text-[#11773D] bg-[#F2FAF3] rounded-full border border-green-100">
                 <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 512 512"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/></svg>
-                Platform Gaya Hidup Ramah Lingkungan
+                <?= htmlspecialchars((string) $heroContent['badge'], ENT_QUOTES, 'UTF-8') ?>
             </div>
 
             <h1 class="text-5xl lg:text-6xl font-extrabold leading-tight text-gray-900 mb-6">
-            Ubah Kebiasaan Kecil Menjadi <span class="text-[#11773D]">Dampak Besar</span> Untuk Bumi
+            <?= htmlspecialchars((string) $heroContent['title_before'], ENT_QUOTES, 'UTF-8') ?>
+            <span class="text-[#11773D]"><?= htmlspecialchars((string) $heroContent['title_highlight'], ENT_QUOTES, 'UTF-8') ?></span>
+            <?= htmlspecialchars((string) $heroContent['title_after'], ENT_QUOTES, 'UTF-8') ?>
             </h1>   
 
             <p class="text-lg text-gray-600 mb-8 leading-relaxed max-w-xl">
-                HijauIn membantumu mencatat aksi nyata harianmu setiap hari, meraih skor dampak, dan wujudkan Eco Score, demi membangun bumi yang lebih hijau.
+                <?= htmlspecialchars((string) $heroContent['description'], ENT_QUOTES, 'UTF-8') ?>
             </p>
 
             <!-- CTA -->
             <div class="mt-8 lg:mt-10 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 lg:gap-5">
                 
             <!-- Tombol Mulai Sekarang -->
-                <a href="daftar.php" class="flex h-12 lg:h-14 w-full sm:w-auto items-center justify-center gap-3 rounded-2xl bg-[#11773D] px-6 lg:px-8 font-semibold text-white transition hover:bg-[#06572d]">
+                <a href="/register.php" class="flex h-12 lg:h-14 w-full sm:w-auto items-center justify-center gap-3 rounded-2xl bg-[#11773D] px-6 lg:px-8 font-semibold text-white transition hover:bg-[#06572d]">
                     Mulai Sekarang
                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
@@ -60,7 +81,7 @@ $heroAvatars = $landingData['hero_avatars'] ?? [];
         </div>
 
         <div class="w-full lg:w-1/2 mt-12 lg:mt-0 relative flex justify-center">
-            <img src="/assets/beranda/hero.png" alt="Ilustrasi Bumi HijauIn" style="width: 1492px; height: 1254; -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 30%, black);" class="w-full translate-y-1/12 scale-125" />
+            <img src="<?= htmlspecialchars((string) $heroContent['image'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string) $heroContent['image_alt'], ENT_QUOTES, 'UTF-8') ?>" style="width: 1492px; height: 1254; -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 30%, black);" class="w-full translate-y-1/12 scale-125" />
         </div>
     </section>
 
