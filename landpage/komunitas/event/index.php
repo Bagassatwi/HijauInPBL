@@ -1,3 +1,67 @@
+<?php
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
+
+    $eventId = trim((string) ($_GET['slug'] ?? $_GET['id'] ?? ''));
+    $event = null;
+    $eventParticipants = [];
+
+    if ($eventId !== '') {
+        try {
+            $eventStmt = $pdo->prepare("
+                SELECT ce.id, ce.title, ce.description, ce.location, ce.event_date, ce.image,
+                       c.id AS community_id, c.name AS community_name, c.city AS community_city,
+                       owner.full_name AS coordinator_name, owner.avatar_url AS coordinator_avatar,
+                       (SELECT COUNT(*) FROM public.community_event_participants cep WHERE cep.event_id = ce.id) AS participant_count
+                FROM public.community_events ce
+                JOIN public.communities c ON c.id = ce.community_id
+                LEFT JOIN public.profiles owner ON owner.id = ce.created_by
+                WHERE ce.id = :event_id
+                LIMIT 1
+            ");
+            $eventStmt->execute([':event_id' => $eventId]);
+            $event = $eventStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+            if ($event) {
+                $participantStmt = $pdo->prepare("
+                    SELECT p.full_name, p.avatar_url
+                    FROM public.community_event_participants cep
+                    LEFT JOIN public.profiles p ON p.id = cep.user_id
+                    WHERE cep.event_id = :event_id
+                    ORDER BY cep.joined_at DESC
+                    LIMIT 3
+                ");
+                $participantStmt->execute([':event_id' => $eventId]);
+                $eventParticipants = $participantStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+        } catch (Throwable $e) {
+            error_log('Failed to load community event: ' . $e->getMessage());
+            $event = null;
+        }
+    }
+
+    $eventNotFound = !$event;
+    $eventTitle = $event['title'] ?? 'Kegiatan tidak ditemukan';
+    $eventDescription = ($event['description'] ?? '') ?: 'Deskripsi kegiatan belum tersedia.';
+    $eventLocation = ($event['location'] ?? '') ?: 'Lokasi belum tersedia';
+    $communityName = $event['community_name'] ?? 'Komunitas';
+    $communityCity = $event['community_city'] ?? '';
+    $eventImage = ($event['image'] ?? '') ?: '/assets/komunitas/aksi.png';
+    $participantCount = (int) ($event['participant_count'] ?? 0);
+    $eventDate = $event && !empty($event['event_date']) ? new DateTime($event['event_date']) : null;
+    if ($eventDate) {
+        $eventDate->setTimezone(new DateTimeZone('Asia/Jakarta'));
+    }
+    $eventDayNames = ['Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'];
+    $eventMonthNames = [1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    $formattedEventDate = $eventDate
+        ? $eventDayNames[$eventDate->format('l')] . ', ' . $eventDate->format('j') . ' ' . $eventMonthNames[(int) $eventDate->format('n')] . ' ' . $eventDate->format('Y')
+        : 'Tanggal belum ditentukan';
+    $formattedEventTime = $eventDate ? $eventDate->format('H.i') . ' WIB' : 'Waktu belum ditentukan';
+
+    include '../../includes/header.php';
+    include '../../includes/navbar.php';
+?>
+
 <!DOCTYPE html>
 
 <html lang="id">
@@ -5,11 +69,12 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Aksi Tanam 1.000 Pohon di Bukit Hijau - HijauIn</title>
+    <title><?= htmlspecialchars($eventTitle) ?> - HijauIn</title>
     <!-- Tailwind CSS CDN with plugins -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <!-- Font Awesome CDN for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"> </script>
     <!-- Tailwind Configuration for HijauIn Brand Colors -->
     <script>
         tailwind.config = {
@@ -45,17 +110,20 @@
 </head>
 
 <body class="bg-[#f8fafc] text-slate-800 antialiased">
-    <?php
-    // 1. Panggil Header & Navbar
-    include '../../includes/header.php';
-    include '../../includes/navbar.php';
-    require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
-    ?>
     <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <?php if ($eventNotFound): ?>
+            <section class="rounded-3xl border border-dashed border-gray-200 bg-white p-10 text-center shadow-sm">
+                <h1 class="text-xl font-bold text-gray-900">Kegiatan tidak ditemukan</h1>
+                <p class="mt-2 text-sm text-gray-500">Tautan kegiatan tidak valid atau kegiatan sudah tidak tersedia.</p>
+                <a class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-hijau-800" href="/landpage/komunitas/">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> Kembali ke komunitas
+                </a>
+            </section>
+        <?php else: ?>
         <!-- BEGIN: BackButton -->
         <div>
             <a class="inline-flex items-center gap-2 text-sm font-semibold text-hijau-800 hover:text-hijau-900 transition-colors group"
-                href="../komunitas/">
+                href="/landpage/komunitas/">
                 <i class="fa-solid fa-arrow-left text-xs transition-transform group-hover:-translate-x-1"></i>
                 <span>Kembali ke Kegiatan</span>
             </a>
@@ -74,41 +142,29 @@
                         <!-- Event Title & Leaf Indicator -->
                         <div class="flex items-center gap-2 mb-2">
                             <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-                                Aksi Tanam 1.000 Pohon di Bukit Hijau
+                                <?= htmlspecialchars($eventTitle) ?>
                             </h1>
                             <i class="fa-solid fa-leaf text-hijau-600 text-2xl"></i>
                         </div>
                         <!-- Event Location -->
                         <div class="flex items-center gap-2 text-gray-500 text-sm font-medium mb-4">
                             <i class="fa-solid fa-location-dot text-hijau-600"></i>
-                            <span>Sentul Eco Park, Bogor, Jawa Barat</span>
+                            <span><?= htmlspecialchars($eventLocation) ?><?= $communityCity ? ' - ' . htmlspecialchars($communityCity) : '' ?></span>
                         </div>
                         <!-- Description -->
                         <p class="text-gray-600 text-sm md:text-base leading-relaxed mb-6">
-                            Aksi restorasi lereng gundul Sentul bersama relawan untuk menanam 1.000 bibit pohon endemik
-                            guna mencegah erosi dan menjaga kestabilan daerah tangkapan air Jabodetabek. Mari
-                            berkontribusi nyata untuk masa depan bumi.
+                            <?= nl2br(htmlspecialchars($eventDescription)) ?>
                         </p>
-                        <!-- Category Badges / Tags -->
                         <div class="flex flex-wrap gap-2.5 mb-8">
-                            <span
-                                class="px-3.5 py-1 text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200/80 rounded-full">Konservasi</span>
-                            <span
-                                class="px-3.5 py-1 text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200/80 rounded-full">Reboisasi</span>
-                            <span
-                                class="px-3.5 py-1 text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200/80 rounded-full">Penanaman
-                                Pohon</span>
-                            <span
-                                class="px-3.5 py-1 text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200/80 rounded-full">Gratis
-                                Partisipasi</span>
+                            <span class="px-3.5 py-1 text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200/80 rounded-full"><?= htmlspecialchars($communityName) ?></span>
                         </div>
                     </div>
                     <!-- Action Row: Buttons & Participant Avatars -->
                     <div
                         class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pt-4 border-t border-gray-50">
                         <div class="flex flex-wrap items-center gap-3">
-                            <button
-                                class="px-6 py-2.5 bg-hijau-900 hover:bg-hijau-800 text-white font-medium text-sm rounded-xl inline-flex items-center gap-2 shadow-sm transition-all">
+                            <button type="button" class="event-register-btn px-6 py-2.5 bg-hijau-900 hover:bg-hijau-800 text-white font-medium text-sm rounded-xl inline-flex items-center gap-2 shadow-sm transition-all"
+                                data-event-id="<?= htmlspecialchars((string) $event['id']) ?>">
                                 <span>Daftar Jadi Relawan</span>
                                 <i class="fa-solid fa-user-plus text-xs"></i>
                             </button>
@@ -118,9 +174,9 @@
                                 <i class="fa-solid fa-share-nodes text-xs text-gray-500"></i>
                             </button>
                         </div>
-                        <!-- Enrolled Relawan Counter with Avatars -->
+                        <!-- Enrolled Relawan Counter with Avatar -->
                         <div class="flex items-center gap-3">
-                            <div class="flex -space-x-2.5 overflow-hidden">
+                            <div class="hidden flex -space-x-2.5 overflow-hidden">
                                 <img alt="Relawan 1"
                                     class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover"
                                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeFyB-SS1eaXzTQc22546EKl5hJ3sHtwOSu7AQh5ywiYSoJc68zY-BTsrC7lxiuatJDaWrNNgzgqVIdmZ3UMDi4K9P-0l_TGq8jZrNKlo0wFECBMDTFdtdt-fcb1MlGQ9pioQOmRnoTpgtplZEiW4xzbjDoukVxNtqOIf5SzoSyx346lOyc5dnmnGCYJBV92OZV2xVwX_VLfOJCKeFZ1J4OzDIzRRBVJvc6p0Yuoo">
@@ -132,7 +188,7 @@
                                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsNyTI0U05TuqbaQ29c9T-wz7Efnc7RLRHTyTrUU27PRhHX6JRlZKsm0N-LD5hpgriI5COlKanAy6VgJTcTs8ji1MjBPoSXUaZbKypxLiBzizgv6bpbiYGFyb19v70_qmJKYN5n4Lo1NAGoHj6nAfc_F-198Fz-bfzelEKwXhag5ithAj8k-yUvFs04pV4-E-MNvYj-JhKwYgMT6yNC_ELaUTOY96TO7NmSXabMqU">
                             </div>
                             <div>
-                                <span class="block text-sm font-bold text-gray-900 leading-tight">380+</span>
+                                <span class="block text-sm font-bold text-gray-900 leading-tight"><?= number_format($participantCount, 0, ',', '.') ?></span>
                                 <span class="block text-[11px] text-gray-500 leading-tight">Relawan Terdaftar</span>
                             </div>
                         </div>
@@ -140,8 +196,8 @@
                 </div>
                 <!-- Right side image -->
                 <div class="lg:col-span-5 h-full flex items-center justify-center">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAznOtZ4vyirtOjqWGj8RCVvoIcWsnl3i29I7VQB-kvVoduhvtSrU-pjS3Qfk9Lb80ZBX3cWiIcpELpbJ38cunFNH-elA7mVQ26rnuah9mAPPTK-PuHLGClXRgUKKOf4smfJkpOgIYYrzqP5PNAOm3-P_Kwph65iry_L_9zwk7lHuuf5wKlWMM-I9nCFOj8PYp0RodoT0Aq4FFjSXK73y-Z2tHGbUu-QJlA84ihPN8"
-                        alt="Kegiatan Aksi Penanaman Pohon di Bukit Hijau Sentul"
+                    <img src="<?= htmlspecialchars($eventImage) ?>"
+                        alt="<?= htmlspecialchars($eventTitle) ?>"
                         class="w-full h-72 md:h-80 lg:h-full object-cover rounded-2xl shadow-sm border border-gray-100">
                 </div>
             </div>
@@ -156,8 +212,8 @@
                         <i class="fa-solid fa-tree text-lg"></i>
                     </div>
                     <div>
-                        <div class="text-base sm:text-lg font-bold text-gray-900 leading-tight">1.000+</div>
-                        <div class="text-xs text-gray-500">Pohon Ditanam</div>
+                        <div class="text-base sm:text-lg font-bold text-gray-900 leading-tight"><?= number_format($participantCount, 0, ',', '.') ?></div>
+                        <div class="text-xs text-gray-500">Relawan Terdaftar</div>
                     </div>
                 </div>
                 <!-- Stat Item 2 -->
@@ -166,9 +222,9 @@
                         class="w-10 h-10 rounded-xl bg-emerald-50 text-hijau-700 flex items-center justify-center shrink-0">
                         <i class="fa-solid fa-award text-lg"></i>
                     </div>
-                    <div>
-                        <div class="text-base sm:text-lg font-bold text-gray-900 leading-tight">120 EcoPoint</div>
-                        <div class="text-xs text-gray-500">Aksi Terverifikasi</div>
+                    <div class="w-full">
+                        <div class="text-base sm:text-lg font-bold text-gray-900 leading-tight wrap-break-word"><?= htmlspecialchars($communityName) ?></div>
+                        <div class="text-xs text-gray-500">Komunitas Penyelenggara</div>
                     </div>
                 </div>
                 <!-- Stat Item 3 -->
@@ -178,8 +234,8 @@
                         <i class="fa-solid fa-earth-asia text-lg"></i>
                     </div>
                     <div>
-                        <div class="text-base sm:text-lg font-bold text-gray-900 leading-tight">2,4 Ha</div>
-                        <div class="text-xs text-gray-500">Area Restorasi</div>
+                        <div class="text-base sm:text-lg font-bold text-gray-900 leading-tight"><?= htmlspecialchars($formattedEventDate) ?></div>
+                        <div class="text-xs text-gray-500">Tanggal Kegiatan</div>
                     </div>
                 </div>
                 <!-- Stat Item 4 -->
@@ -189,8 +245,8 @@
                         <i class="fa-solid fa-users-line text-lg"></i>
                     </div>
                     <div>
-                        <div class="text-base sm:text-lg font-bold text-gray-900 leading-tight">450 Slot</div>
-                        <div class="text-xs text-gray-500">Kapasitas Relawan</div>
+                        <div class="text-base sm:text-lg font-bold text-gray-900 leading-tight"><?= htmlspecialchars($formattedEventTime) ?></div>
+                        <div class="text-xs text-gray-500">Waktu Kegiatan</div>
                     </div>
                 </div>
             </div>
@@ -207,13 +263,7 @@
                         <h2 class="text-xl font-bold text-gray-900">Tentang Kegiatan</h2>
                         <i class="fa-solid fa-leaf text-hijau-600"></i>
                     </div>
-                    <p class="text-gray-600 text-sm leading-relaxed mb-6">
-                        Aksi Tanam 1.000 Pohon ini merupakan inisiatif kolaborasi antara Komunitas HijauIn, kelompok
-                        pecinta alam, dan masyarakat lokal Sentul. Penanaman difokuskan pada area bukit kritis untuk
-                        mencegah potensi longsor di musim hujan, memulihkan kanopi vegetasi alami, serta memperluas
-                        habitat satwa burung lokal. Seluruh bibit disiapkan secara organik dan akan didampingi
-                        pemantauannya selama 12 bulan ke depan.
-                    </p>
+                    <p class="text-gray-600 text-sm leading-relaxed mb-6"><?= nl2br(htmlspecialchars($eventDescription)) ?></p>
                     <!-- 4 Meta Boxes Grid -->
                     <div
                         class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-gray-50/70 p-4 rounded-2xl border border-gray-100">
@@ -223,7 +273,7 @@
                                 <i class="fa-regular fa-calendar"></i>
                                 <span>Tanggal</span>
                             </div>
-                            <div class="text-xs font-semibold text-gray-900">Minggu, 25 Juni 2026</div>
+                            <div class="text-xs font-semibold text-gray-900"><?= htmlspecialchars($formattedEventDate) ?></div>
                         </div>
                         <!-- Item 2: Waktu -->
                         <div>
@@ -231,7 +281,7 @@
                                 <i class="fa-regular fa-clock"></i>
                                 <span>Waktu</span>
                             </div>
-                            <div class="text-xs font-semibold text-gray-900">07.00 - 12.00 WIB</div>
+                            <div class="text-xs font-semibold text-gray-900"><?= htmlspecialchars($formattedEventTime) ?></div>
                         </div>
                         <!-- Item 3: Titik Kumpul -->
                         <div>
@@ -239,21 +289,25 @@
                                 <i class="fa-solid fa-location-dot"></i>
                                 <span>Titik Kumpul</span>
                             </div>
-                            <div class="text-xs font-semibold text-gray-900">Basecamp Eco Park</div>
+                            <div class="text-xs font-semibold text-gray-900"><?= htmlspecialchars($eventLocation) ?></div>
                         </div>
                         <!-- Item 4: Kuota Sisa -->
                         <div>
                             <div class="flex items-center gap-1.5 text-xs text-hijau-800 font-semibold mb-1">
                                 <i class="fa-solid fa-ticket"></i>
-                                <span>Sisa Kuota</span>
+                                <span>Komunitas</span>
                             </div>
-                            <div class="text-xs font-semibold text-emerald-700">70 Slot Tersisa</div>
+                            <div class="text-xs font-semibold text-emerald-700"><?= htmlspecialchars($communityName) ?></div>
                         </div>
                     </div>
                 </section>
-                <!-- Card: Rundown & Jadwal Aksi -->
+                <section class="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm">
+                    <h2 class="text-xl font-bold text-gray-900">Rundown &amp; Jadwal Aksi</h2>
+                    <p class="mt-3 text-sm text-gray-500">Rundown kegiatan belum tersedia.</p>
+                </section>
+                <!-- Jadwal terperinci belum tersedia pada skema community_events. -->
                 <section class="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm"
-                    data-purpose="event-schedule">
+                    data-purpose="event-schedule" hidden>
                     <div class="flex items-center gap-2 mb-6">
                         <h2 class="text-xl font-bold text-gray-900">Rundown &amp; Jadwal Aksi</h2>
                         <i class="fa-solid fa-leaf text-hijau-600"></i>
@@ -384,20 +438,15 @@
             <aside class="space-y-6">
                 <!-- Sidebar Card 1: Informasi Kontak -->
                 <section class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm" data-purpose="contact-info">
-                    <h2 class="text-base font-bold text-gray-900 mb-4">Informasi Kontak</h2>
+                    <h2 class="text-base font-bold text-gray-900 mb-4">Penyelenggara Kegiatan</h2>
                     <ul class="space-y-3.5 text-xs sm:text-sm">
                         <li class="flex items-center gap-3 text-gray-600">
-                            <i class="fa-regular fa-envelope text-emerald-700 w-4 text-center"></i>
-                            <a class="hover:text-emerald-700 truncate"
-                                href="mailto:panitia@hijauin.id">panitia@hijauin.id</a>
-                        </li>
-                        <li class="flex items-center gap-3 text-gray-600">
-                            <i class="fa-brands fa-whatsapp text-emerald-700 w-4 text-center"></i>
-                            <a class="hover:text-emerald-700" href="tel:+6281234567890">+62 812-3456-7890</a>
+                            <i class="fa-solid fa-users text-emerald-700 w-4 text-center"></i>
+                            <span class="truncate"><?= htmlspecialchars($communityName) ?></span>
                         </li>
                         <li class="flex items-center gap-3 text-gray-600">
                             <i class="fa-solid fa-map-location-dot text-emerald-700 w-4 text-center"></i>
-                            <span class="truncate">Bukit Hijau Sentul, Bogor</span>
+                            <span class="truncate"><?= htmlspecialchars($eventLocation) ?></span>
                         </li>
                     </ul>
                 </section>
@@ -406,11 +455,11 @@
                     data-purpose="event-coordinator">
                     <h2 class="text-base font-bold text-gray-900 mb-4">Koordinator Kegiatan</h2>
                     <div class="flex items-center gap-3 mb-5">
-                        <img alt="Rina Lestari" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-100"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIj4UOQ3rTLmhj8BWoFOAAn-YQiUBbRwxGJI6rxr8F8cdBHFVfwxK9RG_JB8REI_UxthOn4F4-sKO3WHYDVaOfOgVfLpJ0mcrCnjoOIAeNCrZlb4StmlQRtzo-alOU0ewna7Z86PG5zedS0HsXRxWzi2Iajnz71M4PRS5tmB2w7AQoT5TQSYarprA4pQ2R5emnPW26y0-vPRTVixDFDLtSwTyHKOSENq36UphuVno" />
+                        <img alt="<?= htmlspecialchars($event['coordinator_name'] ?? 'Panitia Komunitas') ?>" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-100"
+                            src="<?= htmlspecialchars(($event['coordinator_avatar'] ?? '') ?: '/assets/avatar.png') ?>" />
                         <div>
-                            <div class="text-sm font-bold text-gray-900">Rina Lestari</div>
-                            <div class="text-xs text-gray-500">Koordinator Lapangan</div>
+                            <div class="text-sm font-bold text-gray-900"><?= htmlspecialchars($event['coordinator_name'] ?? 'Panitia Komunitas') ?></div>
+                            <div class="text-xs text-gray-500"><?= htmlspecialchars($communityName) ?></div>
                         </div>
                     </div>
                     <button
@@ -420,8 +469,12 @@
                     </button>
                 </section>
                 <!-- Sidebar Card 3: Perlengkapan yang Perlu Dibawa -->
+                <section class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                    <h2 class="text-base font-bold text-gray-900 mb-4">Perlengkapan Relawan</h2>
+                    <p class="text-xs sm:text-sm text-gray-500">Informasi perlengkapan belum tersedia.</p>
+                </section>
                 <section class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm"
-                    data-purpose="required-items">
+                    data-purpose="required-items" hidden>
                     <h2 class="text-base font-bold text-gray-900 mb-4">Perlengkapan Relawan</h2>
                     <ul class="space-y-3.5 text-xs sm:text-sm">
                         <li class="flex items-center gap-3 text-gray-700">
@@ -460,6 +513,15 @@
         <!-- END: MainContentGrid -->
         <!-- BEGIN: GallerySection -->
         <section class="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm" data-purpose="event-gallery">
+            <div class="flex items-center gap-2 mb-6">
+                <h2 class="text-xl font-bold text-gray-900">Galeri Kegiatan</h2>
+                <i class="fa-solid fa-leaf text-hijau-600"></i>
+            </div>
+            <div class="max-w-xl aspect-[4/3] rounded-2xl overflow-hidden shadow-sm">
+                <img alt="<?= htmlspecialchars($eventTitle) ?>" class="w-full h-full object-cover" src="<?= htmlspecialchars($eventImage) ?>">
+            </div>
+        </section>
+        <section class="hidden bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm" data-purpose="legacy-event-gallery" hidden>
             <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center gap-2">
                     <h2 class="text-xl font-bold text-gray-900">Galeri Kegiatan</h2>
@@ -512,25 +574,53 @@
                 </div>
                 <div>
                     <h3 class="text-base sm:text-lg font-bold text-gray-900 leading-snug">
-                        Ayo ikut berkontribusi dalam <span class="text-hijau-700">Aksi Tanam 1.000 Pohon!</span>
+                        Ayo ikut berkontribusi dalam <span class="text-hijau-700"><?= htmlspecialchars($eventTitle) ?>!</span>
                     </h3>
                     <p class="text-xs sm:text-sm text-gray-500 mt-0.5">
                         Bersama kita wujudkan bumi yang lebih hijau, bersih, dan berkelanjutan.
                     </p>
                 </div>
             </div>
-            <button
-                class="w-full md:w-auto px-6 py-3 bg-hijau-900 hover:bg-hijau-800 text-white font-semibold text-sm rounded-xl inline-flex items-center justify-center gap-2 shrink-0 shadow-sm transition-all">
+            <button type="button" class="event-register-btn w-full md:w-auto px-6 py-3 bg-hijau-900 hover:bg-hijau-800 text-white font-semibold text-sm rounded-xl inline-flex items-center justify-center gap-2 shrink-0 shadow-sm transition-all"
+                data-event-id="<?= htmlspecialchars((string) $event['id']) ?>">
                 <span>Daftar Jadi Relawan</span>
                 <i class="fa-solid fa-users text-xs"></i>
             </button>
         </section>
         <!-- END: BottomCTA -->
+        <?php endif; ?>
     </main>
     <!-- BEGIN: MainFooter -->
     <?php
     include '../../includes/footer.php';
     ?>
+    <script>
+        document.querySelectorAll('.event-register-btn').forEach(function (button) {
+            button.addEventListener('click', async function () {
+                const originalText = button.innerText;
+                button.disabled = true;
+                button.innerText = 'Memproses...';
+
+                try {
+                    const response = await fetch('/dashboard/komunitas/services/join_event.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ event_id: button.dataset.eventId })
+                    });
+                    const result = await response.json();
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.message || 'Pendaftaran kegiatan gagal.');
+                    }
+                    alert(result.message || 'Anda berhasil mendaftar kegiatan.');
+                    window.location.reload();
+                } catch (error) {
+                    alert(error.message || 'Pendaftaran kegiatan gagal. Silakan coba lagi.');
+                    button.disabled = false;
+                    button.innerText = originalText;
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
