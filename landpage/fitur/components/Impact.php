@@ -1,45 +1,75 @@
 <?php
 require_once dirname(__DIR__, 3) . '/utils/landing_page.php';
 
-// Data dampak nyata (menggantikan array impacts di TypeScript)
 $impacts = [
     [
         "icon" => "/assets/fitur/daun.png",
-        "value" => "125.430+ kg",
-        "label" => "Sampah Dikelola",
+        "value" => "—",
+        "label" => "Aksi Hijau Terverifikasi",
     ],
     [
         "icon" => "/assets/fitur/co2.png",
-        "value" => "82.340+ kg",
+        "value" => "—",
         "label" => "CO₂ Berhasil Dikurangi",
     ],
     [
         "icon" => "/assets/fitur/air.png",
-        "value" => "1.250.000+ L",
+        "value" => "—",
         "label" => "Air Berhasil Dihemat",
     ],
     [
         "icon" => "/assets/fitur/petir.png",
-        "value" => "215.430+ kWh",
+        "value" => "—",
         "label" => "Energi Berhasil Dihemat",
     ],
     [
         "icon" => "/assets/fitur/pohon.png",
-        "value" => "5.243",
-        "label" => "Pohon Ditanam",
+        "value" => "—",
+        "label" => "Aksi Tanam/Pohon Tercatat",
     ],
     [
         "icon" => "/assets/fitur/person.png",
-        "value" => "15.000+",
-        "label" => "Pengguna Aktif",
+        "value" => "—",
+        "label" => "Pengguna Terdaftar",
     ],
     [
         "icon" => "/assets/fitur/bank.png",
-        "value" => "320+",
-        "label" => "Komunitas Bergabung",
+        "value" => "—",
+        "label" => "Komunitas Terdaftar",
     ],
 ];
-$impacts = fetchLandingPageContent('fitur', 'impacts', $impacts);
+
+try {
+    $actionStats = $pdo->query("
+        SELECT
+            COUNT(*) AS verified_actions,
+            COALESCE(SUM(COALESCE(ea.co2_saved, 0)), 0) AS co2_saved,
+            COALESCE(SUM(COALESCE(ea.water_saved, 0)), 0) AS water_saved,
+            COALESCE(SUM(COALESCE(ea.energy_saved, 0)), 0) AS energy_saved,
+            COUNT(*) FILTER (
+                WHERE LOWER(COALESCE(ea.title, '')) LIKE '%tanam%'
+                   OR LOWER(COALESCE(ea.title, '')) LIKE '%pohon%'
+                   OR LOWER(COALESCE(c.name, '')) LIKE '%tanam%'
+                   OR LOWER(COALESCE(c.name, '')) LIKE '%pohon%'
+            ) AS planting_actions
+        FROM public.eco_actions ea
+        LEFT JOIN public.categories c ON c.id = ea.category_id
+        WHERE ea.status = 'verified'
+    ")->fetch(PDO::FETCH_ASSOC);
+
+    $userCount = (int) $pdo->query("SELECT COUNT(*) FROM public.profiles")->fetchColumn();
+    $communityCount = (int) $pdo->query("SELECT COUNT(*) FROM public.communities")->fetchColumn();
+
+    $impacts[0]['value'] = number_format((int) $actionStats['verified_actions'], 0, ',', '.');
+    $impacts[1]['value'] = number_format((float) $actionStats['co2_saved'], 0, ',', '.') . ' kg';
+    $impacts[2]['value'] = number_format((float) $actionStats['water_saved'], 0, ',', '.') . ' L';
+    $impacts[3]['value'] = number_format((float) $actionStats['energy_saved'], 0, ',', '.') . ' kWh';
+    $impacts[4]['value'] = number_format((int) $actionStats['planting_actions'], 0, ',', '.');
+    $impacts[5]['value'] = number_format($userCount, 0, ',', '.');
+    $impacts[6]['value'] = number_format($communityCount, 0, ',', '.');
+} catch (Throwable $error) {
+    error_log('Failed to load feature impact stats: ' . $error->getMessage());
+}
 ?>
 
 <section class="w-full px-4 py-14 sm:px-8 md:px-12">
