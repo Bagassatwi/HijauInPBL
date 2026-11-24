@@ -22,11 +22,19 @@ if (!$community) {
 
 $creatorName = 'Anggota Komunitas';
 $communityPosts = [];
+$postComments = [];
 $communityMembers = [];
 
 try {
+  ensureCommunityFeatureSchema();
   $postsStmt = $pdo->prepare("
-    SELECT cp.id, cp.caption, cp.image, cp.like_count, cp.comment_count, cp.created_at,
+    SELECT cp.id, cp.caption, cp.image, cp.created_at,
+           (SELECT COUNT(*) FROM public.community_post_likes cpl_count WHERE cpl_count.post_id = cp.id) AS like_count,
+           (SELECT COUNT(*) FROM public.community_post_comments cpc_count WHERE cpc_count.post_id = cp.id) AS comment_count,
+           EXISTS (
+             SELECT 1 FROM public.community_post_likes cpl
+             WHERE cpl.post_id = cp.id AND cpl.user_id = :user_id
+           ) AS user_liked,
            p.full_name AS user_name, p.avatar_url AS user_avatar
     FROM public.community_posts cp
     LEFT JOIN public.profiles p ON p.id = cp.user_id
@@ -34,8 +42,29 @@ try {
     ORDER BY cp.created_at DESC
     LIMIT 5
   ");
-  $postsStmt->execute([':community_id' => $community['id']]);
+  $postsStmt->execute([':community_id' => $community['id'], ':user_id' => $_SESSION['user']['id'] ?? null]);
   $communityPosts = $postsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+  if (!empty($communityPosts)) {
+    $commentParams = [];
+    $commentPlaceholders = [];
+    foreach (array_column($communityPosts, 'id') as $index => $postId) {
+      $placeholder = ':post_id_' . $index;
+      $commentPlaceholders[] = $placeholder;
+      $commentParams[$placeholder] = $postId;
+    }
+    $commentStmt = $pdo->prepare("
+      SELECT cpc.post_id, cpc.content, cpc.created_at, p.full_name AS user_name
+      FROM public.community_post_comments cpc
+      LEFT JOIN public.profiles p ON p.id = cpc.user_id
+      WHERE cpc.post_id IN (" . implode(', ', $commentPlaceholders) . ")
+      ORDER BY cpc.created_at ASC
+    ");
+    $commentStmt->execute($commentParams);
+    foreach ($commentStmt->fetchAll(PDO::FETCH_ASSOC) as $comment) {
+      $postComments[(string) $comment['post_id']][] = $comment;
+    }
+  }
 
   $membersStmt = $pdo->prepare("
     SELECT p.full_name, p.avatar_url, p.eco_score, cm.joined_at
@@ -171,7 +200,7 @@ ensureCommunityFeatureSchema();
                 </div>
               <?php else: ?>
                 <?php foreach ($communityPosts as $post): ?>
-                  <div class="flex flex-col gap-4 pb-8 border-b border-gray-100">
+                  <div class="community-post flex flex-col gap-4 pb-8 border-b border-gray-100" data-post-id="<?= htmlspecialchars((string) $post['id']) ?>">
                     <div class="flex items-start justify-between">
                       <div class="flex items-center gap-3">
                         <img src="<?= htmlspecialchars($post['user_avatar'] ?: '/assets/ava1.jpg') ?>" alt="" class="object-cover w-12 h-12 rounded-full" />
@@ -188,10 +217,24 @@ ensureCommunityFeatureSchema();
                     <?php if (!empty($post['image'])): ?>
                       <img src="<?= htmlspecialchars($post['image']) ?>" alt="Post" class="h-40 w-full rounded-xl object-cover" />
                     <?php endif; ?>
-                    <div class="flex gap-6 text-sm text-gray-500">
-                      <span>❤️ <?= (int) ($post['like_count'] ?? 0) ?></span>
-                      <span>💬 <?= (int) ($post['comment_count'] ?? 0) ?></span>
+                    <div class="flex items-center gap-6 text-sm text-gray-500">
+                      <button type="button" class="post-like-btn <?= !empty($post['user_liked']) ? 'text-red-500' : '' ?>" data-post-id="<?= htmlspecialchars((string) $post['id']) ?>">❤️ <span><?= (int) ($post['like_count'] ?? 0) ?></span></button>
+                      <span>💬 <span class="comment-count"><?= (int) ($post['comment_count'] ?? 0) ?></span></span>
                     </div>
+                    <div class="flex flex-col gap-2">
+                      <?php foreach ($postComments[(string) $post['id']] ?? [] as $comment): ?>
+                        <div class="rounded-xl bg-gray-50 px-4 py-2 text-sm">
+                          <strong><?= htmlspecialchars($comment['user_name'] ?: 'Anggota') ?></strong>
+                          <span class="text-gray-600"><?= nl2br(htmlspecialchars($comment['content'])) ?></span>
+                        </div>
+                      <?php endforeach; ?>
+                    </div>
+                    <?php if ($isCommunityMember): ?>
+                      <form class="post-comment-form flex gap-2" data-post-id="<?= htmlspecialchars((string) $post['id']) ?>">
+                        <input name="content" required maxlength="1000" placeholder="Tulis balasan..." class="min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-2 text-sm" />
+                        <button type="submit" class="rounded-xl bg-[#11773D] px-4 py-2 text-sm font-bold text-white">Balas</button>
+                      </form>
+                    <?php endif; ?>
                   </div>
                 <?php endforeach; ?>
               <?php endif; ?>
@@ -441,6 +484,45 @@ ensureCommunityFeatureSchema();
     if (result.success) {
       window.location.reload();
     }
+  });
+
+  document.querySelectorAll('.post-like-btn').forEach(function(button) {
+    button.addEventListener('click', async function() {
+      const response = await fetch('/dashboard/komunitas/services/toggle_like.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: new URLSearchParams({ post_id: this.dataset.postId }).toString(),
+        credentials: 'same-origin'
+      });
+      const result = await response.json();
+      if (!result.success) {
+        alert(result.message || 'Gagal menyukai postingan.');
+        return;
+      }
+      this.classList.toggle('text-red-500', result.liked);
+      this.querySelector('span').textContent = result.like_count;
+    });
+  });
+
+  document.querySelectorAll('.post-comment-form').forEach(function(form) {
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const response = await fetch('/dashboard/komunitas/services/comment_post.php', {
+        method: 'POST',
+        body: new URLSearchParams({
+          post_id: this.dataset.postId,
+          content: this.elements.content.value
+        }).toString(),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        credentials: 'same-origin'
+      });
+      const result = await response.json();
+      if (!result.success) {
+        alert(result.message || 'Gagal menambahkan balasan.');
+        return;
+      }
+      window.location.reload();
+    });
   });
 
   // Remove Member Button
