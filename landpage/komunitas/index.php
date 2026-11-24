@@ -251,7 +251,7 @@ $impacts = [
                     class="flex items-center gap-2 text-[30px] font-bold text-[#0B0F1F]">
                     Jelajahi Komunitas Hijau <i class="fa-solid fa-leaf text-[#11773D] text-lg"></i>
                 </h2>
-                <a href="lihat-semua-komunitas" data-aos="fade-left" data-aos-delay="150"
+                <a href="./lihat-semua-komunitas" data-aos="fade-left" data-aos-delay="150"
                     data-aos-duration="800"
                     class="flex items-center gap-1 text-sm font-semibold text-[#11773D] transition hover:gap-2 cursor-pointer">
                     Lihat Semua Komunitas <i class="fa-solid fa-chevron-right text-[11px]"></i>
@@ -317,7 +317,7 @@ $impacts = [
                     class="flex items-center gap-2 text-[30px] font-bold text-[#0B0F1F]">
                     Kegiatan Mendatang <i class="fa-solid fa-leaf text-[#11773D] text-lg"></i>
                 </h2>
-                <a href="lihat-semua-kegiatan" data-aos="fade-left" data-aos-delay="150"
+                <a href="./lihat-semua-kegiatan" data-aos="fade-left" data-aos-delay="150"
                     data-aos-duration="800"
                     class="flex items-center gap-1 text-sm font-semibold text-[#11773D] transition hover:gap-2 cursor-pointer">
                     Lihat Semua Kegiatan <i class="fa-solid fa-chevron-right text-[11px]"></i>
