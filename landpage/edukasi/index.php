@@ -221,7 +221,7 @@ $filteredArticles = array_filter($articles, function ($item) use ($search) {
             <?php if (!empty($filteredArticles)): ?>
                 <div class="grid grid-cols-4 gap-6">
                     <?php foreach ($filteredArticles as $index => $item): ?>
-                        <a href="detail?detail=<?php echo $item['slug']; ?>" data-aos="fade-up" data-aos-delay="<?php echo $index * 150; ?>" data-aos-duration="800" class="group block cursor-pointer overflow-hidden rounded-[18px] border border-[#E8ECEA] bg-white transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
+                        <a href="edukasi/detail?detail=<?php echo $item['slug']; ?>" data-aos="fade-up" data-aos-delay="<?php echo $index * 150; ?>" data-aos-duration="800" class="group block cursor-pointer overflow-hidden rounded-[18px] border border-[#E8ECEA] bg-white transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
                             <!-- Image -->
                             <div class="relative h-[320px] overflow-hidden">
                                 <img src="<?php echo htmlspecialchars($item['image']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />

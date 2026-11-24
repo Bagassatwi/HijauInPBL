@@ -404,7 +404,7 @@ $features = fetchLandingPageContent('cara-kerja', 'features', $features);
             <!-- Bagian Tombol Aksi di Sebelah Kanan -->
         <div class="flex flex-col gap-3 shrink-0">
             <!-- Tombol 1: Daftar Gratis Sekarang -->
-            <a href="daftar.php" class="px-7 py-3.5 rounded-2xl bg-[#11773D] text-white font-semibold text-sm hover:bg-green-800 transition shadow-md flex items-center justify-between gap-6">
+            <a href="/register.php" class="px-7 py-3.5 rounded-2xl bg-[#11773D] text-white font-semibold text-sm hover:bg-green-800 transition shadow-md flex items-center justify-between gap-6">
                 <span>Daftar Gratis Sekarang</span>
                 <span class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#11773D] text-xs font-bold shadow-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
