@@ -1,30 +1,42 @@
 <?php
 require_once dirname(__DIR__, 2) . '/utils/landing_page.php';
 
-$activities = [
-    [
-        "img" => "/assets/beranda/bersihpantai.png",
-        "badge" => "Bersih Bersama",
-        "title" => "Bersih Pantai Anyer",
-        "peserta" => "129 peserta",
-        "date" => "12 Mei 2024",
-    ],
-    [
-        "img" => "/assets/beranda/tanampohon.png",
-        "badge" => "Tanam Hijau",
-        "title" => "Tanam Pohon Mangrove",
-        "peserta" => "85 peserta",
-        "date" => "10 Mei 2024",
-    ],
-    [
-        "img" => "/assets/beranda/workshop.png",
-        "badge" => "Daur Ulang",
-        "title" => "Workshop Daur Ulang",
-        "peserta" => "96 peserta",
-        "date" => "08 Mei 2024",
-    ],
-];
-$activities = fetchLandingPageContent('home', 'activities', $activities);
+$activities = [];
+$activityMonthNames = [1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+try {
+    $activityStmt = $pdo->query("
+        SELECT ce.id, ce.title, ce.image, ce.event_date, c.name AS community_name,
+               (
+                   SELECT COUNT(*)
+                   FROM public.community_event_participants cep
+                   WHERE cep.event_id = ce.id
+               ) AS participant_count
+        FROM public.community_events ce
+        JOIN public.communities c ON c.id = ce.community_id
+        ORDER BY COALESCE(ce.event_date, ce.created_at) DESC, ce.created_at DESC
+        LIMIT 3
+    ");
+
+    foreach ($activityStmt->fetchAll(PDO::FETCH_ASSOC) as $activity) {
+        $activityDate = $activity['event_date'] ? new DateTime($activity['event_date']) : null;
+        if ($activityDate) {
+            $activityDate->setTimezone(new DateTimeZone('Asia/Jakarta'));
+        }
+
+        $activities[] = [
+            'id' => $activity['id'],
+            'img' => $activity['image'] ?: '/assets/beranda/bersihpantai.png',
+            'badge' => $activity['community_name'] ?: 'Komunitas Hijau',
+            'title' => $activity['title'],
+            'peserta' => number_format((int) $activity['participant_count'], 0, ',', '.') . ' peserta',
+            'date' => $activityDate
+                ? $activityDate->format('d') . ' ' . $activityMonthNames[(int) $activityDate->format('n')] . ' ' . $activityDate->format('Y')
+                : 'Tanggal belum ditentukan',
+        ];
+    }
+} catch (Throwable $error) {
+    error_log('Failed to load latest community activities: ' . $error->getMessage());
+}
 
 $testimonies = [
     [
@@ -80,12 +92,14 @@ $slides = array_chunk($testimonies, 2);
                     Bergabung dengan ribuan orang hebat yang sudah memulai langkah hijau untuk bumi yang lebih baik.
                 </p>
 
-                <button data-aos="zoom-in" data-aos-delay="200" class="group mt-8 flex h-15 items-center gap-3 rounded-xl border border-[#B7E0C1] px-6 text-[16px] font-semibold text-[#076635] transition-all duration-300 hover:-translate-y-1 hover:bg-green-50">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#EAF8EE] transition-transform duration-300 group-hover:scale-110">
+                <a href="/landpage/komunitas/index.php" data-aos="zoom-in" data-aos-delay="200"
+                    class="group mt-8 inline-flex h-15 items-center gap-3 rounded-xl border border-[#B7E0C1] px-6 text-[16px] font-semibold text-[#076635] transition-all duration-300 hover:-translate-y-1 hover:bg-green-50">
+                    <div
+                        class="flex h-8 w-8 items-center justify-center rounded-full bg-[#EAF8EE] transition-transform duration-300 group-hover:scale-110">
                         <i class="fa-solid fa-users text-[20px]"></i>
                     </div>
                     Gabung Komunitas
-                </button>
+                </a>
             </div>
 
             <!-- CENTER -->
@@ -95,44 +109,51 @@ $slides = array_chunk($testimonies, 2);
                         Kegiatan Komunitas Terbaru
                     </h3>
 
-                    <button class="group flex items-center gap-2 text-[16px] font-semibold text-[#076635]">
+                    <a href="/landpage/komunitas/index.php"
+                        class="group flex items-center gap-2 text-[16px] font-semibold text-[#076635]">
                         Lihat Semua
-                        <i class="fa-solid fa-arrow-right text-xs transition-transform duration-300 group-hover:translate-x-1"></i>
-                    </button>
+                        <i
+                            class="fa-solid fa-arrow-right text-xs transition-transform duration-300 group-hover:translate-x-1"></i>
+                    </a>
                 </div>
 
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    <?php if (empty($activities)): ?>
+                        <div class="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500 sm:col-span-2 xl:col-span-3">
+                            Belum ada kegiatan komunitas yang tersedia.
+                        </div>
+                    <?php else: ?>
                     <?php foreach ($activities as $index => $item):
                         $delay = $index * 150;
-                    ?>
-                        <div data-aos="fade-up" data-aos-delay="<?= $delay ?>" class="group">
+                        ?>
+                        <a href="/landpage/komunitas/event?slug=<?= rawurlencode((string) $item['id']) ?>" data-aos="fade-up" data-aos-delay="<?= $delay ?>" class="group block">
                             <div class="relative overflow-hidden rounded-2xl">
                                 <div class="relative h-[150px] w-full">
-                                    <img
-                                        src="<?= $item['img'] ?>"
-                                        alt="<?= $item['title'] ?>"
+                                    <img src="<?= htmlspecialchars($item['img']) ?>" alt="<?= htmlspecialchars($item['title']) ?>"
                                         class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                 </div>
-                                <span class="absolute bottom-3 left-3 rounded-full bg-[#E8F7EB] px-3 py-1 text-[11px] font-semibold text-[#076635]">
-                                    <?= $item['badge'] ?>
+                                <span
+                                    class="absolute bottom-3 left-3 rounded-full bg-[#E8F7EB] px-3 py-1 text-[11px] font-semibold text-[#076635]">
+                                    <?= htmlspecialchars($item['badge']) ?>
                                 </span>
                             </div>
 
                             <h4 class="mt-4 text-[16px] font-semibold text-[#0B0F1F]">
-                                <?= $item['title'] ?>
+                                <?= htmlspecialchars($item['title']) ?>
                             </h4>
 
                             <div class="mt-2 flex items-center gap-2 text-[13px] text-[#22A75D]">
                                 <i class="fa-solid fa-users"></i>
-                                <?= $item['peserta'] ?>
+                                <?= htmlspecialchars($item['peserta']) ?>
                             </div>
 
                             <div class="mt-1 flex items-center gap-2 text-[13px] text-[#667085]">
                                 <i class="fa-solid fa-calendar-alt"></i>
-                                <?= $item['date'] ?>
+                                <?= htmlspecialchars($item['date']) ?>
                             </div>
-                        </div>
+                        </a>
                     <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -147,14 +168,11 @@ $slides = array_chunk($testimonies, 2);
                             <div class="min-w-full space-y-5">
                                 <?php foreach ($group as $cardIndex => $item):
                                     $cardDelay = $cardIndex * 150;
-                                ?>
-                                    <div data-aos="fade-left" data-aos-delay="<?= $cardDelay ?>" class="rounded-2xl bg-[#FCFCFC] p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                                    ?>
+                                    <div data-aos="fade-left" data-aos-delay="<?= $cardDelay ?>"
+                                        class="rounded-2xl bg-[#FCFCFC] p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                                         <div class="flex items-start gap-4">
-                                            <img
-                                                src="<?= $item['avatar'] ?>"
-                                                alt="<?= $item['name'] ?>"
-                                                width="52"
-                                                height="52"
+                                            <img src="<?= $item['avatar'] ?>" alt="<?= $item['name'] ?>" width="52" height="52"
                                                 class="rounded-full object-cover" />
 
                                             <div class="flex-1">
@@ -185,9 +203,7 @@ $slides = array_chunk($testimonies, 2);
                 <!-- Carousel Dots Navigation -->
                 <div data-aos="fade-up" data-aos-delay="450" class="mt-6 flex justify-center gap-2" id="embla-dots">
                     <?php foreach ($slides as $index => $_): ?>
-                        <button
-                            type="button"
-                            data-index="<?= $index ?>"
+                        <button type="button" data-index="<?= $index ?>"
                             class="embla-dot h-2 rounded-full transition-all <?= $index === 0 ? 'w-5 bg-[#22A75D]' : 'w-2 bg-[#A5D6B0]' ?>"></button>
                     <?php endforeach; ?>
                 </div>
