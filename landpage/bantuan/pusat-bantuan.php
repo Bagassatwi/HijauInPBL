@@ -324,7 +324,7 @@ $popularArticles = fetchLandingPageContent('pusat-bantuan', 'popular_articles', 
             <!-- Tombol Aksi Kanan -->
             <div class="flex flex-col sm:flex-row lg:flex-col gap-4 w-full lg:w-auto relative z-10 shrink-0">
                 <!-- Tombol 1 -->
-                <a href="#" class="bg-white text-gray-900 hover:bg-gray-100 px-6 py-4 rounded-2xl font-bold text-sm flex items-center justify-between gap-4 shadow-sm transition-colors">
+                <a href="hubungi-kami.php" class="bg-white text-gray-900 hover:bg-gray-100 px-6 py-4 rounded-2xl font-bold text-sm flex items-center justify-between gap-4 shadow-sm transition-colors">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
                             <i class="fa-solid fa-ticket"></i>

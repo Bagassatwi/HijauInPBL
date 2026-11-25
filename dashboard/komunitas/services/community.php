@@ -1,6 +1,6 @@
 <?php
 
-session_start();
+// session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/utils/connection.php';
 
 function formatCommunityRow(array $community): array {
