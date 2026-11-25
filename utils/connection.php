@@ -1,6 +1,5 @@
 <?php
-$envFile = dirname(__DIR__) . '\.env';
-define("__DIR__", __DIR__ . "\\HijauInPBL");
+$envFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
 $env = [];
 if (file_exists($envFile)) {
   $env = parse_ini_file($envFile);
@@ -10,7 +9,7 @@ if (file_exists($envFile)) {
 }
 
 $host     = $env['DB_HOST']     ?? '127.0.0.1';
-$port     = $env['DB_PORT']     ?? '3306';
+$port     = $env['DB_PORT']     ?? '5432';
 $dbname   = $env['DB_DATABASE'] ?? 'my_semester_project';
 $username = $env['DB_USERNAME'] ?? 'root';
 $password = $env['DB_PASSWORD'] ?? '';
