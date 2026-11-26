@@ -117,33 +117,42 @@ function fetchJoinedCommunitiesByUser(string $userId): array {
   }
 }
 
-function fetchCommunityPosts(): array {
+function fetchCommunityPosts(string $userId = ''): array {
   global $pdo;
 
   try {
-    $stmt = $pdo->query("
+    ensureCommunityFeatureSchema();
+    $stmt = $pdo->prepare("
       SELECT
         cp.id,
         cp.community_id,
         cp.caption,
         cp.image,
-        cp.like_count,
-        cp.comment_count,
+        (SELECT COUNT(*) FROM public.community_post_likes cpl_count WHERE cpl_count.post_id = cp.id) AS like_count,
+        (SELECT COUNT(*) FROM public.community_post_comments cpc_count WHERE cpc_count.post_id = cp.id) AS comment_count,
         cp.created_at,
         c.name AS community_name,
         p.full_name AS user_name,
-        p.avatar_url AS user_avatar
+        p.avatar_url AS user_avatar,
+        EXISTS (
+          SELECT 1
+          FROM public.community_post_likes cpl
+          WHERE cpl.post_id = cp.id AND cpl.user_id = :current_user
+        ) AS user_liked
       FROM public.community_posts cp
       LEFT JOIN public.communities c ON c.id = cp.community_id
       LEFT JOIN public.profiles p ON p.id = cp.user_id
       ORDER BY cp.created_at DESC
       LIMIT 5
     ");
+    $stmt->execute([':current_user' => $userId ?: null]);
 
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     return array_map(function (array $row): array {
       return [
+        'id' => $row['id'] ?? null,
+        'community_id' => $row['community_id'] ?? null,
         'avatar' => $row['user_avatar'] ?: '/assets/ava1.jpg',
         'image' => $row['image'] ?: '/assets/dashboard-komunitas/post1.png',
         'name' => $row['user_name'] ?: 'Anggota Komunitas',
@@ -152,6 +161,7 @@ function fetchCommunityPosts(): array {
         'time' => $row['created_at'] ? date('d M Y', strtotime($row['created_at'])) : 'Baru',
         'likes' => (string) ($row['like_count'] ?? 0),
         'comments' => (string) ($row['comment_count'] ?? 0),
+        'liked' => (bool) ($row['user_liked'] ?? false),
         'text' => $row['caption'] ?: 'Aksi hijau baru dari komunitas ini.'
       ];
     }, $rows);
@@ -446,6 +456,26 @@ function ensureCommunityFeatureSchema(): void {
         UNIQUE (event_id, user_id)
       )
     ");
+    $pdo->exec("
+      CREATE TABLE IF NOT EXISTS public.community_post_likes (
+        id uuid NOT NULL DEFAULT gen_random_uuid(),
+        post_id uuid NOT NULL REFERENCES public.community_posts(id) ON DELETE CASCADE,
+        user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+        created_at timestamp with time zone DEFAULT now(),
+        PRIMARY KEY (id),
+        UNIQUE (post_id, user_id)
+      )
+    ");
+    $pdo->exec("
+      CREATE TABLE IF NOT EXISTS public.community_post_comments (
+        id uuid NOT NULL DEFAULT gen_random_uuid(),
+        post_id uuid NOT NULL REFERENCES public.community_posts(id) ON DELETE CASCADE,
+        user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+        content text NOT NULL,
+        created_at timestamp with time zone DEFAULT now(),
+        PRIMARY KEY (id)
+      )
+    ");
   } catch (Throwable $e) {
   }
 }
@@ -519,6 +549,84 @@ function createCommunityPost(string $userId, string $communityId, array $payload
     return ['success' => true, 'message' => 'Postingan berhasil dipublikasikan.'];
   } catch (Throwable $e) {
     return ['success' => false, 'message' => 'Gagal memposting: ' . $e->getMessage()];
+  }
+}
+
+function toggleCommunityPostLike(string $userId, string $postId): array {
+  global $pdo;
+
+  if (empty($userId) || empty($postId)) {
+    return ['success' => false, 'message' => 'Data postingan tidak valid.'];
+  }
+
+  try {
+    ensureCommunityFeatureSchema();
+    $postStmt = $pdo->prepare("SELECT community_id FROM public.community_posts WHERE id = :post_id");
+    $postStmt->execute([':post_id' => $postId]);
+    $communityId = (string) ($postStmt->fetchColumn() ?: '');
+
+    if ($communityId === '' || !isCommunityMember($userId, $communityId)) {
+      return ['success' => false, 'message' => 'Gabung ke komunitas untuk menyukai postingan.'];
+    }
+
+    $existingStmt = $pdo->prepare("SELECT id FROM public.community_post_likes WHERE post_id = :post_id AND user_id = :user_id LIMIT 1");
+    $existingStmt->execute([':post_id' => $postId, ':user_id' => $userId]);
+
+    if ($existingStmt->fetchColumn()) {
+      $stmt = $pdo->prepare("DELETE FROM public.community_post_likes WHERE post_id = :post_id AND user_id = :user_id");
+      $stmt->execute([':post_id' => $postId, ':user_id' => $userId]);
+      $liked = false;
+    } else {
+      $stmt = $pdo->prepare("INSERT INTO public.community_post_likes (post_id, user_id) VALUES (:post_id, :user_id)");
+      $stmt->execute([':post_id' => $postId, ':user_id' => $userId]);
+      $liked = true;
+    }
+
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM public.community_post_likes WHERE post_id = :post_id");
+    $countStmt->execute([':post_id' => $postId]);
+    $likeCount = (int) $countStmt->fetchColumn();
+    $updateStmt = $pdo->prepare("UPDATE public.community_posts SET like_count = :like_count WHERE id = :post_id");
+    $updateStmt->execute([':like_count' => $likeCount, ':post_id' => $postId]);
+
+    return ['success' => true, 'liked' => $liked, 'like_count' => $likeCount];
+  } catch (Throwable $e) {
+    return ['success' => false, 'message' => 'Gagal memperbarui suka: ' . $e->getMessage()];
+  }
+}
+
+function addCommunityPostComment(string $userId, string $postId, string $content): array {
+  global $pdo;
+  $content = trim($content);
+
+  if (empty($userId) || empty($postId) || $content === '') {
+    return ['success' => false, 'message' => 'Komentar tidak boleh kosong.'];
+  }
+
+  try {
+    ensureCommunityFeatureSchema();
+    $postStmt = $pdo->prepare("SELECT community_id FROM public.community_posts WHERE id = :post_id");
+    $postStmt->execute([':post_id' => $postId]);
+    $communityId = (string) ($postStmt->fetchColumn() ?: '');
+
+    if ($communityId === '' || !isCommunityMember($userId, $communityId)) {
+      return ['success' => false, 'message' => 'Gabung ke komunitas untuk membalas postingan.'];
+    }
+
+    $insertStmt = $pdo->prepare("
+      INSERT INTO public.community_post_comments (post_id, user_id, content)
+      VALUES (:post_id, :user_id, :content)
+    ");
+    $insertStmt->execute([':post_id' => $postId, ':user_id' => $userId, ':content' => $content]);
+
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM public.community_post_comments WHERE post_id = :post_id");
+    $countStmt->execute([':post_id' => $postId]);
+    $commentCount = (int) $countStmt->fetchColumn();
+    $updateStmt = $pdo->prepare("UPDATE public.community_posts SET comment_count = :comment_count WHERE id = :post_id");
+    $updateStmt->execute([':comment_count' => $commentCount, ':post_id' => $postId]);
+
+    return ['success' => true, 'comment_count' => $commentCount];
+  } catch (Throwable $e) {
+    return ['success' => false, 'message' => 'Gagal menambahkan komentar: ' . $e->getMessage()];
   }
 }
 

@@ -23,7 +23,7 @@ if (empty($weeklyChartData)) {
 }
 
 $popularCommunities = fetchPopularCommunities(5);
-$posts = fetchCommunityPosts();
+$posts = fetchCommunityPosts($userId);
 $allMyCommunities = fetchJoinedCommunitiesByUser($userId);
 $myCommunitiesOwned = fetchOwnedCommunitiesByUser($userId);
 $ownedCommunityIds = array_fill_keys(array_map(fn($item) => (string) ($item['id'] ?? ''), $myCommunitiesOwned), true);
@@ -163,10 +163,10 @@ $suggestions = [
                           <?= $post['text'] ?>
                         </div>
                         <div class="mt-6 flex items-center gap-8">
-                          <button type="button" class="flex items-center gap-2 text-[#667085]">
+                          <button type="button" class="post-like-btn flex items-center gap-2 <?= !empty($post['liked']) ? 'text-red-500' : 'text-[#667085]' ?>" data-post-id="<?= htmlspecialchars((string) ($post['id'] ?? '')) ?>">
                             ❤️ <span class="text-[15px]"><?= htmlspecialchars($post['likes']) ?></span>
                           </button>
-                          <button type="button" class="flex items-center gap-2 text-[#667085]">
+                          <button type="button" class="flex items-center gap-2 text-[#667085]" onclick="window.location.href='/dashboard/komunitas/detail?id=<?= htmlspecialchars((string) ($post['community_id'] ?? '')) ?>'">
                             💬 <span class="text-[15px]"><?= htmlspecialchars($post['comments']) ?></span>
                           </button>
                           <button type="button" class="text-[#667085]">🔗 Share</button>
@@ -710,6 +710,25 @@ $suggestions = [
         if (result.success) {
           window.location.reload();
         }
+      });
+    });
+
+    document.querySelectorAll(".post-like-btn").forEach(function(button) {
+      button.addEventListener("click", async function() {
+        const response = await fetch("/dashboard/komunitas/services/toggle_like.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+          body: new URLSearchParams({ post_id: this.dataset.postId }).toString(),
+          credentials: "same-origin"
+        });
+        const result = await response.json();
+        if (!result.success) {
+          alert(result.message || "Gagal menyukai postingan.");
+          return;
+        }
+        this.classList.toggle("text-red-500", result.liked);
+        this.classList.toggle("text-[#667085]", !result.liked);
+        this.querySelector("span").textContent = result.like_count;
       });
     });
   });
